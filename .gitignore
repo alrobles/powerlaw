@@ -12,6 +12,10 @@
 *.o
 *.so.*
 
+# IDE files
+**/cmake-build-debug/
+**/cmake-build-release/
+
 
 # Precompiled Headers
 *.gch
