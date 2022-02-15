@@ -1,4 +1,4 @@
-#include "RandomGen.h"
+#include "../include/RandomGen.h"
 using namespace std;
 
 random_device RandomGen::rd;

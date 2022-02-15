@@ -1,8 +1,8 @@
-#include "DiscreteDistributions.h"
-#include "TestStatistics.h"
+#include "../include/DiscreteDistributions.h"
+#include "../include/TestStatistics.h"
 #include "Zeta.h"
-#include "RandomGen.h"
-#include "VectorOperations.h"
+#include "../include/RandomGen.h"
+#include "VectorUtilities.h"
 #include <iostream>
 using namespace std;
 
@@ -14,8 +14,8 @@ DiscreteEmpiricalDistribution::DiscreteEmpiricalDistribution(const vector<int>& 
 {
     // Select tail
     vector<int> sortedTailSample = sampleData;
-    VectorOperations::RemoveLower(sortedTailSample, xMin);
-    VectorOperations::Sort(sortedTailSample);
+    VectorUtilities::RemoveLower(sortedTailSample, xMin);
+    VectorUtilities::Sort(sortedTailSample);
 
     // Assign and precalculate
     _xMin = xMin;
@@ -30,7 +30,7 @@ void DiscreteEmpiricalDistribution::PrecalculateTables(const std::vector<int>& s
 
     for (int x = _xMin; x <= _xMax; ++x)
     {
-        const double foundIndex = VectorOperations::IndexOf(sortedTailSample, x - 1);
+        const double foundIndex = VectorUtilities::IndexOf(sortedTailSample, x - 1);
         const double cdfVal = 1.0 - (foundIndex / sortedTailSampleSize);
         _cdf.push_back(cdfVal);
     }
@@ -76,8 +76,8 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData)
 {
     // Estimate xMin via KS minimization.
-    const int minElement = VectorOperations::Min(sampleData);
-    const int maxElement = VectorOperations::Max(sampleData);
+    const int minElement = VectorUtilities::Min(sampleData);
+    const int maxElement = VectorUtilities::Max(sampleData);
 
     double minKs = std::numeric_limits<double>::infinity();
     int xMinEstimator = 0;
@@ -98,7 +98,7 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
     _xMin = xMinEstimator;
     _xMax = maxElement;
     _alpha = AlphaMLEEstimation(sampleData, _xMin);
-    _sampleSize = VectorOperations::NumberOfGreaterOrEqual(sampleData, _xMin);
+    _sampleSize = VectorUtilities::NumberOfGreaterOrEqual(sampleData, _xMin);
     PrecalculateTables();
 }
 
@@ -115,7 +115,7 @@ void DiscretePowerLawDistribution::PrecalculateTables()
 
 double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data, const int xMin)
 {
-    const auto n = (double) VectorOperations::NumberOfGreaterOrEqual(data, xMin);
+    const auto n = (double) VectorUtilities::NumberOfGreaterOrEqual(data, xMin);
     double sum = 0.0;
     for (double x: data)
     {
@@ -276,7 +276,7 @@ SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, c
     _sampleType = sampleType;
     _sampleDataSize = (int) sampleData.size();
 
-    VectorOperations::RemoveGreaterOrEqual(_notInTailData, xMin);
+    VectorUtilities::RemoveGreaterOrEqual(_notInTailData, xMin);
     _tailProbability = 1.0 - (double) _notInTailData.size() / (double) _sampleDataSize;
 }
 

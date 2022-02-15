@@ -1,6 +1,6 @@
-#include "TestStatistics.h"
+#include "../include/TestStatistics.h"
 #include "ThreadPool.h"
-#include "VectorOperations.h"
+#include "VectorUtilities.h"
 using namespace std;
 
 double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const DiscretePowerLawDistribution& model)
@@ -13,7 +13,7 @@ double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const Discre
     for (int x = xMin; x <= xMax; ++x)
         diffs.push_back(abs(empirical.GetCDF(x) - model.GetCDF(x)));
 
-    const double maxDiff = VectorOperations::Max(diffs);
+    const double maxDiff = VectorUtilities::Max(diffs);
     return maxDiff;
 }
 
@@ -69,7 +69,7 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
             ksDistribution.push_back(result.get());
     }
 
-    int syntheticLargerThanEmpirical = VectorOperations::NumberOfGreater(ksDistribution, testKsValue);
+    int syntheticLargerThanEmpirical = VectorUtilities::NumberOfGreater(ksDistribution, testKsValue);
     return (double) syntheticLargerThanEmpirical / (double) ksDistribution.size();
 }
 

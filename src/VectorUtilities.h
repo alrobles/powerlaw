@@ -1,8 +1,31 @@
 #pragma once
 #include <vector>
+#include <sstream>
 
-namespace VectorOperations
+namespace VectorUtilities
 {
+    /// <summary>
+    /// Utility function to convert a string to a numeric type.
+    /// </summary>
+    /// <typeparam name="T">Numeric type. E.g: int, double, etc</typeparam>
+    /// <param name="str">Input string.</param>
+    /// <returns>Converted type.</returns>
+    template <typename T> T ConvertTo(const std::string& str)
+    {
+        std::istringstream ss(str);
+        T num;
+        ss >> num;
+        return num;
+    }
+
+    /// <summary>
+    /// Check if the vector v contains the key.
+    /// </summary>
+    template<typename T> bool VectorContainsQ(const std::vector<T>& v, const T& key)
+    {
+        return std::find(v.begin(), v.end(), key) != v.end();
+    }
+
     template<typename T> void RemoveLower(std::vector<T>& v, T n)
     {
         auto removePositions = remove_if(v.begin(), v.end(), [&](auto const& val){ return val < n; });
