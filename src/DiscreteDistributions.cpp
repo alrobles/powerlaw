@@ -268,10 +268,12 @@ double DiscretePowerLawDistribution::GetStandardError(int sampleSize) const
 *       SyntheticPowerLawGenerator        *
 ******************************************/
 
-SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, const vector<int> &sampleData)
+SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, const vector<int> &sampleData,
+                                                       DiscreteRandomSampleType sampleType)
 : _powerLawDistribution(alpha, xMin, (int)sampleData.size())
 {
     _notInTailData = sampleData;
+    _sampleType = sampleType;
     _sampleDataSize = (int) sampleData.size();
 
     VectorOperations::RemoveGreaterOrEqual(_notInTailData, xMin);
@@ -284,14 +286,14 @@ int SyntheticPowerLawGenerator::SampleFromNotInTail() const
     return _notInTailData[randomIndex];
 }
 
-vector<int> SyntheticPowerLawGenerator::GenerateSynthetic(DiscreteRandomSampleType sampleType) const
+vector<int> SyntheticPowerLawGenerator::GenerateSynthetic() const
 {
     vector<int> syntheticDataset;
     syntheticDataset.reserve(_sampleDataSize);
     for (int i = 0; i < _sampleDataSize; i++)
     {
         if (RandomGen::GetUniform01() < _tailProbability)
-            syntheticDataset.push_back(_powerLawDistribution.GenerateRandomSample(sampleType));
+            syntheticDataset.push_back(_powerLawDistribution.GenerateRandomSample(_sampleType));
         else
             syntheticDataset.push_back(SampleFromNotInTail());
     }

@@ -19,19 +19,20 @@ double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const Discre
 
 double measure_ks_of_replica(const DiscretePowerLawDistribution& fittedModel, const SyntheticPowerLawGenerator& syntheticGenerator)
 {
-    const vector<int>& syntheticSample = syntheticGenerator.GenerateSynthetic(DiscreteRandomSampleType::Precise);
+    const vector<int>& syntheticSample = syntheticGenerator.GenerateSynthetic();
     DiscreteEmpiricalDistribution empiricalSynthetic(syntheticSample, fittedModel.GetXMin());
     return ks_statistic(empiricalSynthetic, fittedModel);
 }
 
-double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas, RuntimeMode mode)
+double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas,
+                     RuntimeMode mode, DiscreteRandomSampleType sampleType)
 {
     // Calculate KS-Statistic value of the fitted model.
     DiscreteEmpiricalDistribution empirical(sampleData, fittedModel.GetXMin());
     double testKsValue = ks_statistic(empirical, fittedModel);
 
     // Create KS-Statistic distribution from synthetic replicas.
-    SyntheticPowerLawGenerator syntheticGenerator(fittedModel.GetAlpha(), fittedModel.GetXMin(), sampleData);
+    SyntheticPowerLawGenerator syntheticGenerator(fittedModel.GetAlpha(), fittedModel.GetXMin(), sampleData, sampleType);
     vector<double> ksDistribution;
     ksDistribution.reserve(replicas);
 

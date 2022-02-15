@@ -53,12 +53,13 @@ class SyntheticPowerLawGenerator
 {
 private:
     DiscretePowerLawDistribution _powerLawDistribution;
+    DiscreteRandomSampleType _sampleType;
     std::vector<int> _notInTailData;
     double _tailProbability;
     int _sampleDataSize;
 
     [[nodiscard]] int SampleFromNotInTail() const;
 public:
-    SyntheticPowerLawGenerator(double alpha, int xMin, const std::vector<int>& sampleData);
-    [[nodiscard]] std::vector<int> GenerateSynthetic(DiscreteRandomSampleType sampleType = DiscreteRandomSampleType::Approximate) const;
+    SyntheticPowerLawGenerator(double alpha, int xMin, const std::vector<int>& sampleData, DiscreteRandomSampleType sampleType);
+    [[nodiscard]] std::vector<int> GenerateSynthetic() const;
 };
