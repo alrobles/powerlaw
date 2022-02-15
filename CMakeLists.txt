@@ -37,8 +37,6 @@ if (CLI_BUILD)
             cli/CsvParser.h
             cli/OptionParser.h)
 
-target_link_libraries(PowerLawFitterCpp GSL::gsl GSL::gslcblas ${CMAKE_THREAD_LIBS_INIT})
-
 elseif(LIB_BUILD)
     add_library(PowerLawFitterCpp SHARED
             src/Zeta.h
@@ -52,5 +50,32 @@ elseif(LIB_BUILD)
             include/RandomGen.h
             include/TestStatistics.h)
     set_target_properties(PowerLawFitterCpp PROPERTIES VERSION ${PROJECT_VERSION})
-    target_link_libraries(PowerLawFitterCpp GSL::gsl GSL::gslcblas ${CMAKE_THREAD_LIBS_INIT})
+
+elseif(MATHLINK_BUILD)
+    set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake/Mathematica" ${CMAKE_MODULE_PATH})
+    find_package(Mathematica COMPONENTS MathLink)
+    if (Mathematica_MathLink_DEFINITIONS)
+        add_definitions(${Mathematica_MathLink_DEFINITIONS})
+    endif()
+    include_directories(${Mathematica_INCLUDE_DIRS})
+
+    Mathematica_MathLink_MPREP_TARGET(mathlink/Mathlink.tm OUTPUT mathlink/Mathlinktm.cpp)
+
+    add_executable(PowerLawFitterCpp
+            mathlink/MathlinkInterface.cpp
+            mathlink/Mathlinktm.cpp
+            src/Zeta.h
+            src/Zeta.cpp
+            src/RandomGen.cpp
+            src/ThreadPool.h
+            src/TestStatistics.cpp
+            src/DiscreteDistributions.cpp
+            src/VectorUtilities.h
+            include/DiscreteDistributions.h
+            include/RandomGen.h
+            include/TestStatistics.h)
+
+    target_link_libraries(PowerLawFitterCpp ${Mathematica_MathLink_LIBRARIES})
 endif()
+
+target_link_libraries(PowerLawFitterCpp GSL::gsl GSL::gslcblas ${CMAKE_THREAD_LIBS_INIT})
