@@ -9,13 +9,14 @@ enum class DiscreteRandomSampleType
 class DiscreteEmpiricalDistribution
 {
 private:
+    int _xMin, _xMax;
     std::vector<double> _cdf;
-    int _minElement, _maxElement;
 
-    void PrecalculateTables(std::vector<int> sampleData);
+    void PrecalculateTables(const std::vector<int>& sortedTailSample);
 public:
-    explicit DiscreteEmpiricalDistribution(const std::vector<int>& sampleData);
+    DiscreteEmpiricalDistribution(const std::vector<int>& sampleData, int xMin);
     [[nodiscard]] double GetCDF(int x) const;
+    [[nodiscard]] int GetMinElement() const;
     [[nodiscard]] int GetMaxElement() const;
 };
 
@@ -23,13 +24,15 @@ class DiscretePowerLawDistribution
 {
 private:
     double _alpha;
-    int _xMin;
+    int _xMin, _xMax;
     int _sampleSize;
+    std::vector<double> _cdf;
 
     [[nodiscard]] int BinarySearch(int l, int r, double x) const;
     [[nodiscard]] int GetRandomNumberApproximate() const;
     [[nodiscard]] int GetRandomNumberPrecise() const;
     static double AlphaMLEEstimation(const std::vector<int>& data, int xMin);
+    void PrecalculateTables();
 public:
     DiscretePowerLawDistribution(double alpha, int xMin, int sampleSize = -1);
     DiscretePowerLawDistribution(const std::vector<int>& sampleData, int xMin);
@@ -39,6 +42,7 @@ public:
     [[nodiscard]] int GenerateRandomSample(DiscreteRandomSampleType sampleType = DiscreteRandomSampleType::Approximate) const;
     [[nodiscard]] double GetPDF(int x) const;
     [[nodiscard]] double GetCDF(int x) const;
+    [[nodiscard]] double CalculateCDF(int x) const;
     [[nodiscard]] double GetAlpha() const;
     [[nodiscard]] double GetStandardError() const;
     [[nodiscard]] double GetStandardError(int sampleSize) const;

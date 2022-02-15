@@ -10,7 +10,7 @@ int main()
 {
     RandomGen::Seed();
     DiscretePowerLawDistribution model(sampleData);
-    const double gof = calculate_gof(model, sampleData, 100, RuntimeMode::MultiThread);
+    const double gof = calculate_gof(model, sampleData, 100, RuntimeMode::SingleThread);
     cout << gof << endl;
 
     return 0;

@@ -2,6 +2,7 @@
 #include "TestStatistics.h"
 #include "Zeta.h"
 #include "RandomGen.h"
+#include "VectorOperations.h"
 #include <iostream>
 using namespace std;
 
@@ -9,36 +10,48 @@ using namespace std;
 *      DiscreteEmpiricalDistribution      *
 ******************************************/
 
-DiscreteEmpiricalDistribution::DiscreteEmpiricalDistribution(const vector<int>& sampleData)
+DiscreteEmpiricalDistribution::DiscreteEmpiricalDistribution(const vector<int>& sampleData, int xMin)
 {
-    PrecalculateTables(sampleData);
-}
-void DiscreteEmpiricalDistribution::PrecalculateTables(vector<int> sampleData)
-{
-    sort(sampleData.begin(), sampleData.end());
-    _minElement = sampleData.front();
-    _maxElement = sampleData.back();
-    _cdf.reserve(_maxElement - _minElement);
+    // Select tail
+    vector<int> sortedTailSample = sampleData;
+    VectorOperations::RemoveLower(sortedTailSample, xMin);
+    VectorOperations::Sort(sortedTailSample);
 
-    for (int i = _minElement; i < _maxElement; i++)
+    // Assign and precalculate
+    _xMin = xMin;
+    _xMax = sortedTailSample.back();
+    PrecalculateTables(sortedTailSample);
+}
+
+void DiscreteEmpiricalDistribution::PrecalculateTables(const std::vector<int>& sortedTailSample)
+{
+    const auto sortedTailSampleSize = (double) sortedTailSample.size();
+    _cdf.reserve(_xMax - _xMin + 1);
+
+    for (int x = _xMin; x <= _xMax; x++)
     {
-        double foundIndex = (double)(upper_bound(sampleData.begin(), sampleData.end(), i - 1) - sampleData.begin());
-        _cdf.push_back(1.0 - (foundIndex / ((double) sampleData.size())));
+        const double foundIndex = VectorOperations::IndexOf(sortedTailSample, x - 1);
+        const double cdfVal = 1.0 - (foundIndex / sortedTailSampleSize);
+        _cdf.push_back(cdfVal);
     }
 }
 double DiscreteEmpiricalDistribution::GetCDF(int x) const
 {
-    if (x > 0 && x < _cdf.size())
-        return _cdf[x - 1];
-    else if (x <= 0)
+    if (x >= _xMin && x <= _xMax)
+        return _cdf[x - _xMin];
+    else if (x < _xMin)
         return 1.0;
     else
         return 0.0;
 }
 
+int DiscreteEmpiricalDistribution::GetMinElement() const
+{
+    return _xMin;
+}
 int DiscreteEmpiricalDistribution::GetMaxElement() const
 {
-    return _maxElement;
+    return _xMax;
 }
 
 /******************************************
@@ -49,23 +62,28 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(double alpha, int xMi
 {
     _alpha = alpha;
     _xMin = xMin;
+    _xMax = -1;
     _sampleSize = sampleSize;
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, int xMin)
 {
     _xMin = xMin;
+    _xMax = *max_element(sampleData.begin(), sampleData.end());
     _alpha = AlphaMLEEstimation(sampleData, xMin);
     _sampleSize = (int) sampleData.size();
+    PrecalculateTables();
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData)
 {
     // Estimate xMin via KS minimization.
-    DiscreteEmpiricalDistribution empiricalDistribution(sampleData);
-    const int maxElement = empiricalDistribution.GetMaxElement();
+    const int minElement = VectorOperations::Min(sampleData);
+    const int maxElement = VectorOperations::Max(sampleData);
+
     double minKs = std::numeric_limits<double>::infinity();
     int xMinEstimator = 0;
-    for (int x = 1; x < maxElement; x++)
+    for (int x = minElement; x <= maxElement; x++)
     {
+        DiscreteEmpiricalDistribution empiricalDistribution(sampleData, x);
         DiscretePowerLawDistribution model(sampleData, x);
         const double ks = ks_statistic(empiricalDistribution, model);
         if (ks < minKs)
@@ -78,13 +96,26 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
     }
 
     _xMin = xMinEstimator;
+    _xMax = maxElement;
     _alpha = AlphaMLEEstimation(sampleData, _xMin);
-    _sampleSize = (int) sampleData.size();
+    _sampleSize = VectorOperations::NumberOfGreaterOrEqual(sampleData, _xMin);
+    PrecalculateTables();
+}
+
+void DiscretePowerLawDistribution::PrecalculateTables()
+{
+    // The tables can only be precalculated if there is a known xMax.
+    if (_xMax > 0)
+    {
+        _cdf.reserve(_xMax - _xMin + 1);
+        for (int x = _xMin; x <= _xMax; x++)
+            _cdf.push_back(CalculateCDF(x));
+    }
 }
 
 double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data, const int xMin)
 {
-    const auto n = (double) data.size();
+    const auto n = (double) VectorOperations::NumberOfGreaterOrEqual(data, xMin);
     double sum = 0.0;
     for (double x: data)
     {
@@ -108,9 +139,9 @@ int DiscretePowerLawDistribution::BinarySearch(int l, int r, double x) const
     if (l <= r)
     {
         int mid = l + (r - l) / 2;
-        const double cdf = GetCDF(mid);
-        const double rCdf = GetCDF(mid + 1);
-        const double lCdf = GetCDF(mid - 1);
+        const double cdf = CalculateCDF(mid);
+        const double rCdf = CalculateCDF(mid + 1);
+        const double lCdf = CalculateCDF(mid - 1);
         const double diff = abs(cdf - x);
         const double lDiff = abs(lCdf - x);
         const double rDiff = abs(rCdf - x);
@@ -148,7 +179,7 @@ int DiscretePowerLawDistribution::GetRandomNumberPrecise() const
     {
         x1 = x2;
         x2 = 2 * x1;
-        cdf = GetCDF(x2);
+        cdf = CalculateCDF(x2);
     }
     while (cdf >= diff);
 
@@ -188,12 +219,26 @@ double DiscretePowerLawDistribution::GetPDF(int x) const
 
 double DiscretePowerLawDistribution::GetCDF(int x) const
 {
-    if (x > 0)
+    if (_xMax > 0)
+    {
+        if (x >= _xMin && x <= _xMax)
+            return _cdf[x - _xMin];
+        else if (x < _xMin)
+            return 1.0;
+        else
+            return 0.0;
+    }
+    else
+        return CalculateCDF(x);
+}
+
+double DiscretePowerLawDistribution::CalculateCDF(int x) const
+{
+    if (x >= _xMin)
     {
         const double numerator = hurwitz_zeta(_alpha, x).real();
         const double denominator = hurwitz_zeta(_alpha, _xMin).real();
-        const double cdf = numerator / denominator;
-        return cdf;
+        return numerator / denominator;
     }
     else
         return 1.0;
@@ -229,12 +274,8 @@ SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, c
     _notInTailData = sampleData;
     _sampleDataSize = (int) sampleData.size();
 
-    // Remove elements of the power-law tail.
-    auto it = remove_if(_notInTailData.begin(), _notInTailData.end(),
-                        [&](auto const& val){ return val >= xMin; });
-    _notInTailData.erase(it, _notInTailData.end());
-
-    _tailProbability = 1.0 - (double) _notInTailData.size() / (double) sampleData.size();
+    VectorOperations::RemoveGreaterOrEqual(_notInTailData, xMin);
+    _tailProbability = 1.0 - (double) _notInTailData.size() / (double) _sampleDataSize;
 }
 
 int SyntheticPowerLawGenerator::SampleFromNotInTail() const

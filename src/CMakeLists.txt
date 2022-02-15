@@ -15,6 +15,7 @@ add_executable(PowerLawFitterCpp
         TestStatistics.cpp
         TestStatistics.h
         DiscreteDistributions.cpp
-        DiscreteDistributions.h)
+        DiscreteDistributions.h
+        VectorOperations.h)
 
 target_link_libraries(PowerLawFitterCpp GSL::gsl GSL::gslcblas ${CMAKE_THREAD_LIBS_INIT})

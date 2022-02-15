@@ -35,9 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
     @cite https://github.com/andrewfowlie/thermal_funcs
 
 */
-#ifndef POWERLAWFITTERCPP_ZETA_H
-#define POWERLAWFITTERCPP_ZETA_H
+#pragma once
 #include <complex>
 typedef std::complex<double> cdouble;
 cdouble hurwitz_zeta(double s, cdouble a, int N = 50);
-#endif
