@@ -28,7 +28,7 @@ void DiscreteEmpiricalDistribution::PrecalculateTables(const std::vector<int>& s
     const auto sortedTailSampleSize = (double) sortedTailSample.size();
     _cdf.reserve(_xMax - _xMin + 1);
 
-    for (int x = _xMin; x <= _xMax; x++)
+    for (int x = _xMin; x <= _xMax; ++x)
     {
         const double foundIndex = VectorOperations::IndexOf(sortedTailSample, x - 1);
         const double cdfVal = 1.0 - (foundIndex / sortedTailSampleSize);
@@ -81,7 +81,7 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
 
     double minKs = std::numeric_limits<double>::infinity();
     int xMinEstimator = 0;
-    for (int x = minElement; x <= maxElement; x++)
+    for (int x = minElement; x <= maxElement; ++x)
     {
         DiscreteEmpiricalDistribution empiricalDistribution(sampleData, x);
         DiscretePowerLawDistribution model(sampleData, x);
@@ -108,7 +108,7 @@ void DiscretePowerLawDistribution::PrecalculateTables()
     if (_xMax > 0)
     {
         _cdf.reserve(_xMax - _xMin + 1);
-        for (int x = _xMin; x <= _xMax; x++)
+        for (int x = _xMin; x <= _xMax; ++x)
             _cdf.push_back(CalculateCDF(x));
     }
 }
@@ -194,12 +194,12 @@ std::vector<int> DiscretePowerLawDistribution::GenerateRandomSequence(int n, Dis
 
     if (sampleType == DiscreteRandomSampleType::Approximate)
     {
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < n; ++i)
             randomSequence.push_back(GetRandomNumberApproximate());
     }
     else if (sampleType == DiscreteRandomSampleType::Precise)
     {
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < n; ++i)
             randomSequence.push_back(GetRandomNumberPrecise());
     }
     return randomSequence;
@@ -290,7 +290,7 @@ vector<int> SyntheticPowerLawGenerator::GenerateSynthetic() const
 {
     vector<int> syntheticDataset;
     syntheticDataset.reserve(_sampleDataSize);
-    for (int i = 0; i < _sampleDataSize; i++)
+    for (int i = 0; i < _sampleDataSize; ++i)
     {
         if (RandomGen::GetUniform01() < _tailProbability)
             syntheticDataset.push_back(_powerLawDistribution.GenerateRandomSample(_sampleType));

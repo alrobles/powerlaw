@@ -1,5 +1,4 @@
 #include <iostream>
-#include "DiscreteDistributions.h"
 #include "RandomGen.h"
 #include "TestStatistics.h"
 using namespace std;
@@ -9,10 +8,11 @@ const vector<int> sampleData {2,1,1,1,1,16,1,1,1,1,1,1,1,1,1,1,1,1,2,20,1,1,1,1,
 int main()
 {
     RandomGen::Seed();
-    DiscretePowerLawDistribution model(sampleData);
+    DiscretePowerLawDistribution model = fit_model(sampleData);
 
     cout << "Fitted model:" << endl;
-    cout << "Alpha: " << model.GetAlpha() << " xMin: " << model.GetXMin() << endl;
+    cout << "Alpha: " << model.GetAlpha() << "±" << model.GetStandardError() << " xMin: " << model.GetXMin() << endl;
+    cout << "Fit KS statistic: " << calculate_ks_statistic_of_fit(model, sampleData) << endl;
     const double gof = calculate_gof(model, sampleData, 100, RuntimeMode::MultiThread,
                                      DiscreteRandomSampleType::Precise);
     cout << "GoodnessOfFit: " << gof << endl;

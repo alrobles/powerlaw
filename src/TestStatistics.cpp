@@ -10,7 +10,7 @@ double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const Discre
 
     vector<double> diffs;
     diffs.reserve(xMax - xMin + 1);
-    for (int x = xMin; x <= xMax; x++)
+    for (int x = xMin; x <= xMax; ++x)
         diffs.push_back(abs(empirical.GetCDF(x) - model.GetCDF(x)));
 
     const double maxDiff = VectorOperations::Max(diffs);
@@ -24,6 +24,20 @@ double measure_ks_of_replica(const DiscretePowerLawDistribution& fittedModel, co
     return ks_statistic(empiricalSynthetic, fittedModel);
 }
 
+double calculate_ks_statistic_of_fit(const vector<int> &sampleData)
+{
+    return calculate_ks_statistic_of_fit(fit_model(sampleData), sampleData);
+}
+double calculate_ks_statistic_of_fit(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData)
+{
+    DiscreteEmpiricalDistribution empirical(sampleData, fittedModel.GetXMin());
+    return ks_statistic(empirical, fittedModel);
+}
+
+double calculate_gof(const vector<int>& sampleData, int replicas, RuntimeMode mode, DiscreteRandomSampleType sampleType)
+{
+    return calculate_gof(fit_model(sampleData), sampleData, replicas, mode, sampleType);
+}
 double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas,
                      RuntimeMode mode, DiscreteRandomSampleType sampleType)
 {
@@ -38,7 +52,7 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
 
     if (mode == RuntimeMode::SingleThread)
     {
-        for (int i = 0; i < replicas; i++)
+        for (int i = 0; i < replicas; ++i)
             ksDistribution.push_back(measure_ks_of_replica(fittedModel, syntheticGenerator));
     }
     else if (mode == RuntimeMode::MultiThread)
@@ -47,7 +61,7 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
         thread_pool pool;
         vector<future<double>> futures;
         futures.reserve(replicas);
-        for (int i = 0; i < replicas; i++)
+        for (int i = 0; i < replicas; ++i)
             futures.push_back(pool.submit(measure_ks_of_replica, fittedModel, syntheticGenerator));
 
         // Get results

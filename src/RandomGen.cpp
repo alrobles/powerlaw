@@ -1,5 +1,4 @@
 #include "RandomGen.h"
-#include <chrono>
 using namespace std;
 
 random_device RandomGen::rd;
