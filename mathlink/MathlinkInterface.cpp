@@ -1,18 +1,57 @@
+#include <vector>
 #include "mathlink.h"
+#include "../include/TestStatistics.h"
+using namespace std;
 
 #if defined(WINDOWS_MATHLINK)
 #include <windows.h>
 #endif
 
-void test()
+void fit_model(int* data, long dataLenght)
 {
+    vector<int> dataVec(data, data + dataLenght);
+    DiscretePowerLawDistribution model = fit_model(dataVec);
 
+    MLPutFunction(stdlink, "Association", 3);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "Alpha");
+    MLPutReal(stdlink, model.GetAlpha());
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "AlphaStandardError");
+    MLPutReal(stdlink, model.GetStandardError());
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "xMin");
+    MLPutReal(stdlink, model.GetXMin());
+
+    MLEndPacket(stdlink);
 }
 
+void calculate_gof(int* data, long dataLenght, int replicas)
+{
+    vector<int> dataVec(data, data + dataLenght);
+    DiscretePowerLawDistribution model = fit_model(dataVec);
+    const double ksStatistic = calculate_ks_statistic_of_fit(model, dataVec);
+    const double pValue = calculate_gof(model, dataVec, replicas);
+
+    MLPutFunction(stdlink, "Association", 2);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "p-value");
+    MLPutReal(stdlink, pValue);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "KS-Statistic");
+    MLPutReal(stdlink, ksStatistic);
+
+    MLEndPacket(stdlink);
+}
+
+
 /****************************
-*                           *
 *   Mathlink entry point    *
-*                           *
 ****************************/
 
 #if defined(WINDOWS_MATHLINK)

@@ -47,7 +47,6 @@ const option::Descriptor usage[] =
 
 int main(int argc, char* argv[])
 {
-    RandomGen::Seed();
     vector<int> data;
     int bootstrapReplicas = 500;
     RuntimeMode runtimeMode = RuntimeMode::MultiThread;

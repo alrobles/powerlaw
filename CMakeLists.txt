@@ -62,8 +62,6 @@ elseif(MATHLINK_BUILD)
     Mathematica_MathLink_MPREP_TARGET(mathlink/Mathlink.tm OUTPUT mathlink/Mathlinktm.cpp)
 
     add_executable(PowerLawFitterCpp
-            mathlink/MathlinkInterface.cpp
-            mathlink/Mathlinktm.cpp
             src/Zeta.h
             src/Zeta.cpp
             src/RandomGen.cpp
@@ -73,7 +71,10 @@ elseif(MATHLINK_BUILD)
             src/VectorUtilities.h
             include/DiscreteDistributions.h
             include/RandomGen.h
-            include/TestStatistics.h)
+            include/TestStatistics.h
+            mathlink/MathlinkInterface.cpp
+            mathlink/Mathlinktm.cpp
+            )
 
     target_link_libraries(PowerLawFitterCpp ${Mathematica_MathLink_LIBRARIES})
 endif()

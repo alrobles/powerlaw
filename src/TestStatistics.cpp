@@ -41,6 +41,8 @@ double calculate_gof(const vector<int>& sampleData, int replicas, RuntimeMode mo
 double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas,
                      RuntimeMode mode, DiscreteRandomSampleType sampleType)
 {
+    RandomGen::Seed();
+
     // Calculate KS-Statistic value of the fitted model.
     DiscreteEmpiricalDistribution empirical(sampleData, fittedModel.GetXMin());
     double testKsValue = ks_statistic(empirical, fittedModel);
