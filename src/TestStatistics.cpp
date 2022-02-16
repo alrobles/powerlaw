@@ -3,10 +3,15 @@
 #include "VectorUtilities.h"
 using namespace std;
 
+static thread_pool pool;
+
 double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const DiscretePowerLawDistribution& model)
 {
     const int xMin = model.GetXMin();
     const int xMax = empirical.GetMaxElement();
+
+    if (xMin >= xMax)
+        return numeric_limits<double>::infinity();
 
     vector<double> diffs;
     diffs.reserve(xMax - xMin + 1);
@@ -60,7 +65,6 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
     else if (mode == RuntimeMode::MultiThread)
     {
         // Launch threads
-        thread_pool pool;
         vector<future<double>> futures;
         futures.reserve(replicas);
         for (int i = 0; i < replicas; ++i)

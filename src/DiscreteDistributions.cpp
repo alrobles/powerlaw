@@ -282,7 +282,7 @@ SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, c
 
 int SyntheticPowerLawGenerator::SampleFromNotInTail() const
 {
-    const int randomIndex = RandomGen::GetInt((int)_notInTailData.size());
+    const int randomIndex = RandomGen::GetInt((int)_notInTailData.size() - 1);
     return _notInTailData[randomIndex];
 }
 
