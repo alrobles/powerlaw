@@ -59,9 +59,10 @@ elseif(MATHLINK_BUILD)
     endif()
     include_directories(${Mathematica_INCLUDE_DIRS})
 
-    Mathematica_MathLink_MPREP_TARGET(mathlink/Mathlink.tm OUTPUT mathlink/Mathlinktm.cpp)
+    Mathematica_MathLink_MPREP_TARGET(mathlink/Mathlink.tm OUTPUT Mathlinktm.cpp)
 
     add_executable(PowerLawFitterCpp
+            ${CMAKE_CURRENT_BINARY_DIR}/Mathlinktm.cpp
             src/Zeta.h
             src/Zeta.cpp
             src/RandomGen.cpp
@@ -73,7 +74,6 @@ elseif(MATHLINK_BUILD)
             include/RandomGen.h
             include/TestStatistics.h
             mathlink/MathlinkInterface.cpp
-            mathlink/Mathlinktm.cpp
             )
 
     target_link_libraries(PowerLawFitterCpp ${Mathematica_MathLink_LIBRARIES})
