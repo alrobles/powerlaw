@@ -32,10 +32,11 @@ private:
     [[nodiscard]] int BinarySearch(int l, int r, double x) const;
     [[nodiscard]] int GetRandomNumberApproximate() const;
     [[nodiscard]] int GetRandomNumberPrecise() const;
+    [[nodiscard]] double CalculateCDF(int x) const;
     static double AlphaMLEEstimation(const std::vector<int>& data, int xMin);
     void PrecalculateTables();
 public:
-    DiscretePowerLawDistribution(double alpha, int xMin, int sampleSize = -1);
+    DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alpha, int xMin);
     DiscretePowerLawDistribution(const std::vector<int>& sampleData, int xMin);
     explicit DiscretePowerLawDistribution(const std::vector<int>& sampleData);
 
@@ -43,7 +44,6 @@ public:
     [[nodiscard]] int GenerateRandomSample(DiscreteRandomSampleType sampleType = DiscreteRandomSampleType::Approximate) const;
     [[nodiscard]] double GetPDF(int x) const;
     [[nodiscard]] double GetCDF(int x) const;
-    [[nodiscard]] double CalculateCDF(int x) const;
     [[nodiscard]] double GetAlpha() const;
     [[nodiscard]] double GetStandardError() const;
     [[nodiscard]] double GetStandardError(int sampleSize) const;

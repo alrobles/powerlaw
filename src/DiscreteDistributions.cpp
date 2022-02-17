@@ -1,7 +1,6 @@
 #include "../include/DiscreteDistributions.h"
 #include "../include/TestStatistics.h"
 #include "Zeta.h"
-#include "../include/RandomGen.h"
 #include "VectorUtilities.h"
 #include <iostream>
 using namespace std;
@@ -58,12 +57,13 @@ int DiscreteEmpiricalDistribution::GetMaxElement() const
 *       DiscretePowerLawDistribution      *
 ******************************************/
 
-DiscretePowerLawDistribution::DiscretePowerLawDistribution(double alpha, int xMin, int sampleSize)
+DiscretePowerLawDistribution::DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alpha, int xMin)
 {
     _alpha = alpha;
     _xMin = xMin;
-    _xMax = -1;
-    _sampleSize = sampleSize;
+    _xMax = *max_element(sampleData.begin(), sampleData.end());
+    _sampleSize = (int) sampleData.size();
+    PrecalculateTables();
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, int xMin)
 {
@@ -104,13 +104,9 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
 
 void DiscretePowerLawDistribution::PrecalculateTables()
 {
-    // The tables can only be precalculated if there is a known xMax.
-    if (_xMax > 0)
-    {
-        _cdf.reserve(_xMax - _xMin + 1);
-        for (int x = _xMin; x <= _xMax; ++x)
-            _cdf.push_back(CalculateCDF(x));
-    }
+    _cdf.reserve(_xMax - _xMin + 1);
+    for (int x = _xMin; x <= _xMax; ++x)
+        _cdf.push_back(CalculateCDF(x));
 }
 
 double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data, const int xMin)
@@ -129,9 +125,8 @@ double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data,
 int DiscretePowerLawDistribution::GetRandomNumberApproximate() const
 {
     double r = RandomGen::GetUniform01();
-    r = clamp(r, 0.0, 0.9999); // Hack to avoid excessively high values.
     const double realRand = (_xMin - 0.5) * pow((1.0 - r), -1.0 / (_alpha - 1.0)) + 0.5;
-    return (int) round(realRand);
+    return ((int) round(realRand)) % _xMax;
 }
 
 int DiscretePowerLawDistribution::BinarySearch(int l, int r, double x) const
@@ -184,7 +179,8 @@ int DiscretePowerLawDistribution::GetRandomNumberPrecise() const
     while (cdf >= diff);
 
     // Find exact solution in the interval by binary search
-    return BinarySearch(x1, x2, diff);
+    int randomNumber = BinarySearch(x1, x2, diff);
+    return randomNumber % _xMax;
 }
 
 std::vector<int> DiscretePowerLawDistribution::GenerateRandomSequence(int n, DiscreteRandomSampleType sampleType) const
@@ -270,7 +266,7 @@ double DiscretePowerLawDistribution::GetStandardError(int sampleSize) const
 
 SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, const vector<int> &sampleData,
                                                        DiscreteRandomSampleType sampleType)
-: _powerLawDistribution(alpha, xMin, (int)sampleData.size())
+: _powerLawDistribution(sampleData, alpha, xMin)
 {
     _notInTailData = sampleData;
     _sampleType = sampleType;
