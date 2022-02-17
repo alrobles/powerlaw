@@ -81,6 +81,7 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
     const int minElement = VectorUtilities::Min(sampleData);
     const int maxElement = VectorUtilities::Max(sampleData);
 
+
     double minKs = std::numeric_limits<double>::infinity();
     int xMinEstimator = 0;
     for (int x = minElement; x <= maxElement; ++x)
@@ -97,7 +98,7 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
         }
     }
 
-    _xMin = xMinEstimator;
+    _xMin = clamp(xMinEstimator, 1, maxElement);
     _xMax = maxElement;
     _alpha = AlphaMLEEstimation(sampleData, _xMin);
     _sampleSize = VectorUtilities::NumberOfGreaterOrEqual(sampleData, _xMin);
