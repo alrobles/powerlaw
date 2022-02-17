@@ -122,28 +122,22 @@ double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data,
     return 1.0 + (n / sum);
 }
 
-int DiscretePowerLawDistribution::GetRandomNumberApproximate() const
-{
-    double r = RandomGen::GetUniform01();
-    const double realRand = (_xMin - 0.5) * pow((1.0 - r), -1.0 / (_alpha - 1.0)) + 0.5;
-    return ((int) round(realRand)) % _xMax;
-}
-
 int DiscretePowerLawDistribution::BinarySearch(int l, int r, double x) const
 {
-    if (l <= r)
+    while (l <= r)
     {
-        int mid = l + (r - l) / 2;
-        const double cdf = CalculateCDF(mid);
-        const double rCdf = CalculateCDF(mid + 1);
-        const double lCdf = CalculateCDF(mid - 1);
-        const double diff = abs(cdf - x);
-        const double lDiff = abs(lCdf - x);
-        const double rDiff = abs(rCdf - x);
+        const int mid = l + (r - l) / 2;
+        const double cdf = GetCDF(mid);
+        const double rCdf = GetCDF(mid + 1);
+        const double lCdf = GetCDF(mid - 1);
 
         // If the value is between mid - 1 and mid + 1, select the one whose cdf is closer to x.
         if (x < lCdf && x > rCdf)
         {
+            const double diff = abs(cdf - x);
+            const double lDiff = abs(lCdf - x);
+            const double rDiff = abs(rCdf - x);
+
             if (lDiff < diff)
                 return mid - 1;
             else if (rDiff < diff)
@@ -153,15 +147,26 @@ int DiscretePowerLawDistribution::BinarySearch(int l, int r, double x) const
         }
         // If not, proceed with the binary search.
         else if (cdf < x)
-            return BinarySearch(l, mid - 1, x);
+            r = mid - 1;
         else
-            return BinarySearch(mid + 1, r, x);
+            l = mid + 1;
     }
-    else
-        return -1;
+
+    return -1;
 }
 
-int DiscretePowerLawDistribution::GetRandomNumberPrecise() const
+std::vector<int> DiscretePowerLawDistribution::GenerateRandomSequence(int n) const
+{
+    vector<int> randomSequence;
+    randomSequence.reserve(n);
+
+    for (int i = 0; i < n; ++i)
+        randomSequence.push_back(GenerateRandomSample());
+
+    return randomSequence;
+}
+
+int DiscretePowerLawDistribution::GenerateRandomSample() const
 {
     const double r = RandomGen::GetUniform01();
     const double diff = 1 - r;
@@ -174,36 +179,13 @@ int DiscretePowerLawDistribution::GetRandomNumberPrecise() const
     {
         x1 = x2;
         x2 = 2 * x1;
-        cdf = CalculateCDF(x2);
+        cdf = GetCDF(x2);
     }
     while (cdf >= diff);
 
     // Find exact solution in the interval by binary search
     int randomNumber = BinarySearch(x1, x2, diff);
     return randomNumber % _xMax;
-}
-
-std::vector<int> DiscretePowerLawDistribution::GenerateRandomSequence(int n, DiscreteRandomSampleType sampleType) const
-{
-    vector<int> randomSequence;
-    randomSequence.reserve(n);
-
-    if (sampleType == DiscreteRandomSampleType::Approximate)
-    {
-        for (int i = 0; i < n; ++i)
-            randomSequence.push_back(GetRandomNumberApproximate());
-    }
-    else if (sampleType == DiscreteRandomSampleType::Precise)
-    {
-        for (int i = 0; i < n; ++i)
-            randomSequence.push_back(GetRandomNumberPrecise());
-    }
-    return randomSequence;
-}
-
-int DiscretePowerLawDistribution::GenerateRandomSample(DiscreteRandomSampleType sampleType) const
-{
-    return (sampleType == DiscreteRandomSampleType::Approximate) ? GetRandomNumberApproximate() : GetRandomNumberPrecise();
 }
 
 double DiscretePowerLawDistribution::GetPDF(int x) const
@@ -215,17 +197,12 @@ double DiscretePowerLawDistribution::GetPDF(int x) const
 
 double DiscretePowerLawDistribution::GetCDF(int x) const
 {
-    if (_xMax > 0)
-    {
-        if (x >= _xMin && x <= _xMax)
-            return _cdf[x - _xMin];
-        else if (x < _xMin)
-            return 1.0;
-        else
-            return 0.0;
-    }
+    if (x >= _xMin && x <= _xMax)
+        return _cdf[x - _xMin];
+    else if (x < _xMin)
+        return 1.0;
     else
-        return CalculateCDF(x);
+        return 0.0;
 }
 
 double DiscretePowerLawDistribution::CalculateCDF(int x) const
@@ -264,12 +241,10 @@ double DiscretePowerLawDistribution::GetStandardError(int sampleSize) const
 *       SyntheticPowerLawGenerator        *
 ******************************************/
 
-SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, const vector<int> &sampleData,
-                                                       DiscreteRandomSampleType sampleType)
+SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, const vector<int>& sampleData)
 : _powerLawDistribution(sampleData, alpha, xMin)
 {
     _notInTailData = sampleData;
-    _sampleType = sampleType;
     _sampleDataSize = (int) sampleData.size();
 
     VectorUtilities::RemoveGreaterOrEqual(_notInTailData, xMin);
@@ -289,7 +264,7 @@ vector<int> SyntheticPowerLawGenerator::GenerateSynthetic() const
     for (int i = 0; i < _sampleDataSize; ++i)
     {
         if (RandomGen::GetUniform01() < _tailProbability)
-            syntheticDataset.push_back(_powerLawDistribution.GenerateRandomSample(_sampleType));
+            syntheticDataset.push_back(_powerLawDistribution.GenerateRandomSample());
         else
             syntheticDataset.push_back(SampleFromNotInTail());
     }

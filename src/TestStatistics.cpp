@@ -39,12 +39,11 @@ double calculate_ks_statistic_of_fit(const DiscretePowerLawDistribution &fittedM
     return ks_statistic(empirical, fittedModel);
 }
 
-double calculate_gof(const vector<int>& sampleData, int replicas, RuntimeMode mode, DiscreteRandomSampleType sampleType)
+double calculate_gof(const vector<int>& sampleData, int replicas, RuntimeMode mode)
 {
-    return calculate_gof(fit_model(sampleData), sampleData, replicas, mode, sampleType);
+    return calculate_gof(fit_model(sampleData), sampleData, replicas, mode);
 }
-double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas,
-                     RuntimeMode mode, DiscreteRandomSampleType sampleType)
+double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas, RuntimeMode mode)
 {
     RandomGen::Seed();
 
@@ -53,7 +52,7 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
     double testKsValue = ks_statistic(empirical, fittedModel);
 
     // Create KS-Statistic distribution from synthetic replicas.
-    SyntheticPowerLawGenerator syntheticGenerator(fittedModel.GetAlpha(), fittedModel.GetXMin(), sampleData, sampleType);
+    SyntheticPowerLawGenerator syntheticGenerator(fittedModel.GetAlpha(), fittedModel.GetXMin(), sampleData);
     vector<double> ksDistribution;
     ksDistribution.reserve(replicas);
 

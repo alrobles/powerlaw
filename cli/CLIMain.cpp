@@ -31,7 +31,7 @@ struct Arg : public option::Arg
 
 enum optionIndex
 {
-    UNKNOWN, DATA, BOOTSTRAP_REPLICAS, SINGLE_THREAD, FAST_SAMPLING, HELP
+    UNKNOWN, DATA, BOOTSTRAP_REPLICAS, SINGLE_THREAD, HELP
 };
 
 const option::Descriptor usage[] =
@@ -40,7 +40,6 @@ const option::Descriptor usage[] =
         {DATA, 0,"d", "data", Arg::Required, "  -d <data_to_test>, \t--data=<data_to_test>  \tSample data as a list of comma-separated integers." },
         {BOOTSTRAP_REPLICAS, 0,"r", "replicas", Arg::Required, "  -r <number_of_replicas>, \t--replicas=<number_of_replicas>  \tNumber of bootstrap replicas. Default is 500." },
         {SINGLE_THREAD,  0, "s", "single_thread", Arg::None, "  -s, \t--single_thread  \tUse only one thread for the boot-strapping." },
-        {FAST_SAMPLING,  0, "f", "fast_sampling", Arg::None, "  -f, \t--fast_sampling  \tUses the sampling approximation from a continuous model." },
         {HELP, 0,"", "help", Arg::None,    "  \t--help  \tShow instructions." },
         {0,0,0,0,0,0}
 };
@@ -50,7 +49,6 @@ int main(int argc, char* argv[])
     vector<int> data;
     int bootstrapReplicas = 500;
     RuntimeMode runtimeMode = RuntimeMode::MultiThread;
-    DiscreteRandomSampleType sampleType = DiscreteRandomSampleType::Precise;
 
     // Argument parser
     argc -= (argc > 0); argv += (argc > 0);
@@ -85,9 +83,6 @@ int main(int argc, char* argv[])
             case SINGLE_THREAD:
                 runtimeMode = RuntimeMode::SingleThread;
                 break;
-            case FAST_SAMPLING:
-                sampleType = DiscreteRandomSampleType::Approximate;
-                break;
             default:
                 break;
         }
@@ -98,8 +93,7 @@ int main(int argc, char* argv[])
     cout << "Fitted model:" << endl;
     cout << "Alpha: " << model.GetAlpha() << "±" << model.GetStandardError() << " xMin: " << model.GetXMin() << endl;
     cout << "Fit KS statistic: " << calculate_ks_statistic_of_fit(model, data) << endl;
-    const double gof = calculate_gof(model, data, bootstrapReplicas, runtimeMode, sampleType);
-    cout << "GoodnessOfFit: " << gof << endl;
+    cout << "GoodnessOfFit: " << calculate_gof(model, data, bootstrapReplicas, runtimeMode) << endl;
 
     return 0;
 }
