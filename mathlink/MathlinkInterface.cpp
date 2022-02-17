@@ -7,9 +7,9 @@ using namespace std;
 #include <windows.h>
 #endif
 
-void fit_model(int* data, long dataLenght)
+void fit_model(int* data, long dataLength)
 {
-    vector<int> dataVec(data, data + dataLenght);
+    vector<int> dataVec(data, data + dataLength);
     DiscretePowerLawDistribution model = fit_model(dataVec);
 
     MLPutFunction(stdlink, "Association", 3);
@@ -29,9 +29,9 @@ void fit_model(int* data, long dataLenght)
     MLEndPacket(stdlink);
 }
 
-void calculate_gof(int* data, long dataLenght, int replicas)
+void calculate_gof(int* data, long dataLength, int replicas)
 {
-    vector<int> dataVec(data, data + dataLenght);
+    vector<int> dataVec(data, data + dataLength);
     DiscretePowerLawDistribution model = fit_model(dataVec);
     const double ksStatistic = calculate_ks_statistic_of_fit(model, dataVec);
     const double pValue = calculate_gof(model, dataVec, replicas);

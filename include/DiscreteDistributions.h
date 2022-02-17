@@ -8,7 +8,7 @@ private:
     int _xMin, _xMax;
     std::vector<double> _cdf;
 
-    void PrecalculateTables(const std::vector<int>& sortedTailSample);
+    void PrecalculateCDF(const std::vector<int>& sortedTailSample);
 public:
     DiscreteEmpiricalDistribution(const std::vector<int>& sampleData, int xMin);
     [[nodiscard]] double GetCDF(int x) const;
@@ -27,7 +27,7 @@ private:
     [[nodiscard]] int BinarySearch(int l, int r, double x) const;
     [[nodiscard]] double CalculateCDF(int x) const;
     static double AlphaMLEEstimation(const std::vector<int>& data, int xMin);
-    void PrecalculateTables();
+    void PrecalculateCDF();
 public:
     DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alpha, int xMin);
     DiscretePowerLawDistribution(const std::vector<int>& sampleData, int xMin);

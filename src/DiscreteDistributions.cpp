@@ -19,19 +19,21 @@ DiscreteEmpiricalDistribution::DiscreteEmpiricalDistribution(const vector<int>& 
     // Assign and precalculate
     _xMin = xMin;
     _xMax = sortedTailSample.back();
-    PrecalculateTables(sortedTailSample);
+    PrecalculateCDF(sortedTailSample);
 }
 
-void DiscreteEmpiricalDistribution::PrecalculateTables(const std::vector<int>& sortedTailSample)
+void DiscreteEmpiricalDistribution::PrecalculateCDF(const std::vector<int>& sortedTailSample)
 {
-    const auto sortedTailSampleSize = (double) sortedTailSample.size();
-    _cdf.reserve(_xMax - _xMin + 1);
-
-    for (int x = _xMin; x <= _xMax; ++x)
+    if (_xMax > _xMin)
     {
-        const double foundIndex = VectorUtilities::IndexOf(sortedTailSample, x - 1);
-        const double cdfVal = 1.0 - (foundIndex / sortedTailSampleSize);
-        _cdf.push_back(cdfVal);
+        const auto sortedTailSampleSize = (double) sortedTailSample.size();
+        _cdf.reserve(_xMax - _xMin + 1);
+
+        for (int x = _xMin; x <= _xMax; ++x) {
+            const double foundIndex = VectorUtilities::IndexOf(sortedTailSample, x - 1);
+            const double cdfVal = 1.0 - (foundIndex / sortedTailSampleSize);
+            _cdf.push_back(cdfVal);
+        }
     }
 }
 double DiscreteEmpiricalDistribution::GetCDF(int x) const
@@ -63,7 +65,7 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const std::vector<int
     _xMin = xMin;
     _xMax = *max_element(sampleData.begin(), sampleData.end());
     _sampleSize = (int) sampleData.size();
-    PrecalculateTables();
+    PrecalculateCDF();
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, int xMin)
 {
@@ -71,7 +73,7 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
     _xMax = *max_element(sampleData.begin(), sampleData.end());
     _alpha = AlphaMLEEstimation(sampleData, xMin);
     _sampleSize = (int) sampleData.size();
-    PrecalculateTables();
+    PrecalculateCDF();
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData)
 {
@@ -99,10 +101,10 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
     _xMax = maxElement;
     _alpha = AlphaMLEEstimation(sampleData, _xMin);
     _sampleSize = VectorUtilities::NumberOfGreaterOrEqual(sampleData, _xMin);
-    PrecalculateTables();
+    PrecalculateCDF();
 }
 
-void DiscretePowerLawDistribution::PrecalculateTables()
+void DiscretePowerLawDistribution::PrecalculateCDF()
 {
     _cdf.reserve(_xMax - _xMin + 1);
     for (int x = _xMin; x <= _xMax; ++x)
@@ -184,8 +186,10 @@ int DiscretePowerLawDistribution::GenerateRandomSample() const
     while (cdf >= diff);
 
     // Find exact solution in the interval by binary search
-    int randomNumber = BinarySearch(x1, x2, diff);
-    return randomNumber % _xMax;
+    const int searchResult = BinarySearch(x1, x2, diff);
+    const int randomNumber = clamp(searchResult % (_xMax + 1), _xMin, _xMax);
+
+    return randomNumber;
 }
 
 double DiscretePowerLawDistribution::GetPDF(int x) const
@@ -254,7 +258,8 @@ SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, c
 int SyntheticPowerLawGenerator::SampleFromNotInTail() const
 {
     const int randomIndex = RandomGen::GetInt((int)_notInTailData.size() - 1);
-    return _notInTailData[randomIndex];
+    const int randomNumber = _notInTailData[randomIndex];
+    return randomNumber;
 }
 
 vector<int> SyntheticPowerLawGenerator::GenerateSynthetic() const
@@ -263,10 +268,9 @@ vector<int> SyntheticPowerLawGenerator::GenerateSynthetic() const
     syntheticDataset.reserve(_sampleDataSize);
     for (int i = 0; i < _sampleDataSize; ++i)
     {
-        if (RandomGen::GetUniform01() < _tailProbability)
-            syntheticDataset.push_back(_powerLawDistribution.GenerateRandomSample());
-        else
-            syntheticDataset.push_back(SampleFromNotInTail());
+        const int randomNumber = (RandomGen::GetUniform01() < _tailProbability) ?
+                                 _powerLawDistribution.GenerateRandomSample() : SampleFromNotInTail();
+        syntheticDataset.push_back(randomNumber);
     }
 
     return syntheticDataset;

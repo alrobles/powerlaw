@@ -38,7 +38,7 @@ const option::Descriptor usage[] =
 {
         {UNKNOWN, 0, "", "",Arg::None, "INSTRUCTIONS: PowerLawFitterCpp [options]\n"},
         {DATA, 0,"d", "data", Arg::Required, "  -d <data_to_test>, \t--data=<data_to_test>  \tSample data as a list of comma-separated integers." },
-        {BOOTSTRAP_REPLICAS, 0,"r", "replicas", Arg::Required, "  -r <number_of_replicas>, \t--replicas=<number_of_replicas>  \tNumber of bootstrap replicas. Default is 500." },
+        {BOOTSTRAP_REPLICAS, 0,"r", "replicas", Arg::Required, "  -r <number_of_replicas>, \t--replicas=<number_of_replicas>  \tNumber of bootstrap replicas. Default is 2000." },
         {SINGLE_THREAD,  0, "s", "single_thread", Arg::None, "  -s, \t--single_thread  \tUse only one thread for the boot-strapping." },
         {HELP, 0,"", "help", Arg::None,    "  \t--help  \tShow instructions." },
         {0,0,0,0,0,0}
@@ -47,7 +47,7 @@ const option::Descriptor usage[] =
 int main(int argc, char* argv[])
 {
     vector<int> data;
-    int bootstrapReplicas = 500;
+    int bootstrapReplicas = 2000;
     RuntimeMode runtimeMode = RuntimeMode::MultiThread;
 
     // Argument parser
