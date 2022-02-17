@@ -10,21 +10,36 @@ using namespace std;
 void fit_model(int* data, long dataLength)
 {
     vector<int> dataVec(data, data + dataLength);
-    DiscretePowerLawDistribution model = fit_model(dataVec);
+
+    double alpha, stdError;
+    int xMin;
+    if (!dataVec.empty())
+    {
+        DiscretePowerLawDistribution model = fit_model(dataVec);
+        alpha = model.GetAlpha();
+        stdError = model.GetStandardError();
+        xMin = model.GetXMin();
+    }
+    else
+    {
+        alpha = numeric_limits<double>::quiet_NaN();
+        stdError = numeric_limits<double>::quiet_NaN();
+        xMin = 0;
+    }
 
     MLPutFunction(stdlink, "Association", 3);
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "Alpha");
-    MLPutReal(stdlink, model.GetAlpha());
+    MLPutReal(stdlink, alpha);
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "AlphaStandardError");
-    MLPutReal(stdlink, model.GetStandardError());
+    MLPutReal(stdlink, stdError);
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "xMin");
-    MLPutReal(stdlink, model.GetXMin());
+    MLPutReal(stdlink, xMin);
 
     MLEndPacket(stdlink);
 }
@@ -32,9 +47,19 @@ void fit_model(int* data, long dataLength)
 void calculate_gof(int* data, long dataLength, int replicas)
 {
     vector<int> dataVec(data, data + dataLength);
-    DiscretePowerLawDistribution model = fit_model(dataVec);
-    const double ksStatistic = calculate_ks_statistic_of_fit(model, dataVec);
-    const double pValue = calculate_gof(model, dataVec, replicas);
+
+    double ksStatistic, pValue;
+    if (!dataVec.empty())
+    {
+        DiscretePowerLawDistribution model = fit_model(dataVec);
+        ksStatistic = calculate_ks_statistic_of_fit(model, dataVec);
+        pValue = calculate_gof(model, dataVec, replicas);
+    }
+    else
+    {
+        ksStatistic = numeric_limits<double>::infinity();
+        pValue = 0.0;
+    }
 
     MLPutFunction(stdlink, "Association", 2);
 
