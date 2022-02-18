@@ -29,7 +29,8 @@ void DiscreteEmpiricalDistribution::PrecalculateCDF(const std::vector<int>& sort
         const auto sortedTailSampleSize = (double) sortedTailSample.size();
         _cdf.reserve(_xMax - _xMin + 1);
 
-        for (int x = _xMin; x <= _xMax; ++x) {
+        for (int x = _xMin; x <= _xMax; ++x)
+        {
             const double foundIndex = VectorUtilities::IndexOf(sortedTailSample, x - 1);
             const double cdfVal = 1.0 - (foundIndex / sortedTailSampleSize);
             _cdf.push_back(cdfVal);

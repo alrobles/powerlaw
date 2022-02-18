@@ -82,3 +82,8 @@ DiscretePowerLawDistribution fit_model(const vector<int> &sampleData)
 {
     return DiscretePowerLawDistribution(sampleData);
 }
+
+DiscretePowerLawDistribution fit_model(const vector<int> &sampleData, int xMin)
+{
+    return DiscretePowerLawDistribution(sampleData, xMin);
+}

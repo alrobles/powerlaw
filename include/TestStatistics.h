@@ -8,6 +8,7 @@ enum class RuntimeMode
 };
 
 DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData);
+DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, int xMin);
 
 double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const DiscretePowerLawDistribution& model);
 
