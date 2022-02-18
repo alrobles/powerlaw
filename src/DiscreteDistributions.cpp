@@ -9,6 +9,18 @@ using namespace std;
 *      DiscreteEmpiricalDistribution      *
 ******************************************/
 
+DiscreteEmpiricalDistribution::DiscreteEmpiricalDistribution(const vector<int>& sampleData)
+{
+    // Select tail
+    vector<int> sortedTailSample = sampleData;
+    VectorUtilities::Sort(sortedTailSample);
+
+    // Assign and precalculate
+    _xMin = sortedTailSample.front();
+    _xMax = sortedTailSample.back();
+    PrecalculateCDF(sortedTailSample);
+}
+
 DiscreteEmpiricalDistribution::DiscreteEmpiricalDistribution(const vector<int>& sampleData, int xMin)
 {
     // Select tail

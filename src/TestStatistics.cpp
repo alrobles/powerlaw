@@ -3,6 +3,7 @@
 #include "VectorUtilities.h"
 using namespace std;
 
+/// Threadpool used in the MultiThread runtime mode.
 static thread_pool pool;
 
 double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const DiscretePowerLawDistribution& model)
