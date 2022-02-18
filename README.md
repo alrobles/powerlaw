@@ -1,4 +1,6 @@
 # DiscretePowerlawFitter
+![Screenshot](https://github.com/CarlosManuelRodr/DiscretePowerlawFitter/raw/main/img/CLI.png)
+
 This is a fast discrete power-law fitter based on the paper `Power-law distributions in empirical data` from Aaron Clauset, Cosma Rohilla Shalizi, M. E. J. Newman and the [official implementations](https://aaronclauset.github.io/powerlaws/).
 
 This library exists to address the long waiting time of the bootstrap procedure in the official implementations.
@@ -6,7 +8,7 @@ This library exists to address the long waiting time of the bootstrap procedure 
 ## Features
 - Fast fast! Optimizations have been made to be able to obtain a goodness-of-fit p-value with 10,000 replicas in 1 second.
 - Precise generation of replicas. Instead of discretizing the values of the random number generator for the continuous case, it uses the pseudo CDF inversion with binary search algorithm as described in `Appendix D` of the paper.
-- Multiple interfaces: CLI, Mathlink and shared library.
+- Multiple interfaces: CLI, Mathlink and shared library. Python and R interfaces will be included in the future.
 
 
 ## CLI Usage
