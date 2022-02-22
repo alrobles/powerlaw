@@ -76,46 +76,61 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const std::vector<int
 {
     _alpha = alpha;
     _xMin = xMin;
-    _xMax = *max_element(sampleData.begin(), sampleData.end());
+    _xMax = VectorUtilities::Max(sampleData);
+    _stateIsOk = (_xMin < _xMax) && !sampleData.empty();
     _sampleSize = (int) sampleData.size();
-    PrecalculateCDF();
+
+    if (_stateIsOk)
+        PrecalculateCDF();
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, int xMin)
 {
     _xMin = xMin;
-    _xMax = *max_element(sampleData.begin(), sampleData.end());
-    _alpha = AlphaMLEEstimation(sampleData, xMin);
-    _sampleSize = (int) sampleData.size();
-    PrecalculateCDF();
+    if (!sampleData.empty())
+    {
+        _xMax = VectorUtilities::Max(sampleData);
+        _stateIsOk = (_xMin < _xMax);
+        _alpha = AlphaMLEEstimation(sampleData, xMin);
+        _sampleSize = (int) sampleData.size();
+    }
+    else
+        _stateIsOk = false;
+
+    if (_stateIsOk)
+        PrecalculateCDF();
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData)
 {
-    // Estimate xMin via KS minimization.
-    const int minElement = VectorUtilities::Min(sampleData);
-    const int maxElement = VectorUtilities::Max(sampleData);
+    _stateIsOk = !sampleData.empty();
 
-
-    double minKs = std::numeric_limits<double>::infinity();
-    int xMinEstimator = 0;
-    for (int x = minElement; x <= maxElement; ++x)
+    if (_stateIsOk)
     {
-        DiscreteEmpiricalDistribution empiricalDistribution(sampleData, x);
-        DiscretePowerLawDistribution model(sampleData, x);
-        const double ks = ks_statistic(empiricalDistribution, model);
-        if (ks < minKs)
-            minKs = ks;
-        else
-        {
-            xMinEstimator = x - 1;
-            break;
-        }
-    }
+        // Estimate xMin via KS minimization.
+        const int minElement = VectorUtilities::Min(sampleData);
+        const int maxElement = VectorUtilities::Max(sampleData);
 
-    _xMin = clamp(xMinEstimator, 1, maxElement);
-    _xMax = maxElement;
-    _alpha = AlphaMLEEstimation(sampleData, _xMin);
-    _sampleSize = VectorUtilities::NumberOfGreaterOrEqual(sampleData, _xMin);
-    PrecalculateCDF();
+        double minKs = std::numeric_limits<double>::infinity();
+        int xMinEstimator = 0;
+        for (int x = minElement; x <= maxElement; ++x)
+        {
+            DiscreteEmpiricalDistribution empiricalDistribution(sampleData, x);
+            DiscretePowerLawDistribution model(sampleData, x);
+            const double ks = ks_statistic(empiricalDistribution, model);
+            if (ks < minKs)
+                minKs = ks;
+            else
+            {
+                xMinEstimator = x - 1;
+                break;
+            }
+        }
+
+        _xMin = clamp(xMinEstimator, 1, maxElement);
+        _xMax = maxElement;
+        _alpha = AlphaMLEEstimation(sampleData, _xMin);
+        _sampleSize = VectorUtilities::NumberOfGreaterOrEqual(sampleData, _xMin);
+        PrecalculateCDF();
+    }
 }
 
 void DiscretePowerLawDistribution::PrecalculateCDF()
@@ -184,43 +199,56 @@ std::vector<int> DiscretePowerLawDistribution::GenerateRandomSequence(int n) con
 
 int DiscretePowerLawDistribution::GenerateRandomSample() const
 {
-    const double r = RandomGen::GetUniform01();
-    const double diff = 1 - r;
-
-    // Find the search interval.
-    int x1, x2;
-    double cdf;
-    x2 = _xMin;
-    do
+    if (_stateIsOk)
     {
-        x1 = x2;
-        x2 = 2 * x1;
-        cdf = GetCDF(x2);
+        const double r = RandomGen::GetUniform01();
+        const double diff = 1 - r;
+
+        // Find the search interval.
+        int x1, x2;
+        double cdf;
+        x2 = _xMin;
+        do {
+            x1 = x2;
+            x2 = 2 * x1;
+            cdf = GetCDF(x2);
+        } while (cdf >= diff);
+
+        // Find exact solution in the interval by binary search
+        const int searchResult = BinarySearch(x1, x2, diff);
+        const int randomNumber = clamp(searchResult % (_xMax + 1), _xMin, _xMax);
+
+        return randomNumber;
     }
-    while (cdf >= diff);
-
-    // Find exact solution in the interval by binary search
-    const int searchResult = BinarySearch(x1, x2, diff);
-    const int randomNumber = clamp(searchResult % (_xMax + 1), _xMin, _xMax);
-
-    return randomNumber;
+    else
+        return numeric_limits<int>::quiet_NaN();
 }
 
 double DiscretePowerLawDistribution::GetPDF(int x) const
 {
-    double numerator = pow(x, -_alpha);
-    double denominator = hurwitz_zeta(_alpha, _xMin).real();
-    return numerator / denominator;
+    if (_stateIsOk)
+    {
+        double numerator = pow(x, -_alpha);
+        double denominator = hurwitz_zeta(_alpha, _xMin).real();
+        return numerator / denominator;
+    }
+    else
+        return numeric_limits<double>::quiet_NaN();
 }
 
 double DiscretePowerLawDistribution::GetCDF(int x) const
 {
-    if (x >= _xMin && x <= _xMax)
-        return _cdf[x - _xMin];
-    else if (x < _xMin)
-        return 1.0;
+    if (_stateIsOk)
+    {
+        if (x >= _xMin && x <= _xMax)
+            return _cdf[x - _xMin];
+        else if (x < _xMin)
+            return 1.0;
+        else
+            return 0.0;
+    }
     else
-        return 0.0;
+        return numeric_limits<double>::quiet_NaN();
 }
 
 double DiscretePowerLawDistribution::CalculateCDF(int x) const
@@ -237,22 +265,36 @@ double DiscretePowerLawDistribution::CalculateCDF(int x) const
 
 double DiscretePowerLawDistribution::GetAlpha() const
 {
-    return _alpha;
+    if (_stateIsOk)
+        return _alpha;
+    else
+        return numeric_limits<double>::quiet_NaN();
 }
 
 int DiscretePowerLawDistribution::GetXMin() const
 {
-    return _xMin;
+    if (_stateIsOk)
+        return _xMin;
+    else
+        return numeric_limits<int>::quiet_NaN();
 }
 
 double DiscretePowerLawDistribution::GetStandardError() const
 {
-    return GetStandardError(_sampleSize);
+    if (_stateIsOk)
+        return GetStandardError(_sampleSize);
+    else
+        return numeric_limits<double>::quiet_NaN();
 }
 
 double DiscretePowerLawDistribution::GetStandardError(int sampleSize) const
 {
     return (_alpha - 1.0) / (double) sampleSize;
+}
+
+int DiscretePowerLawDistribution::StateIsOk() const
+{
+    return _stateIsOk;
 }
 
 /******************************************

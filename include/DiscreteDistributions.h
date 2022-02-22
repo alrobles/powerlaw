@@ -47,6 +47,7 @@ private:
     double _alpha;
     int _xMin, _xMax;
     int _sampleSize;
+    bool _stateIsOk;
     std::vector<double> _cdf;
 
     [[nodiscard]] int BinarySearch(int l, int r, double x) const;
@@ -104,6 +105,9 @@ public:
 
     /// Obtain the estimated xMin value.
     [[nodiscard]] int GetXMin() const;
+
+    /// Check that there arent any error conditions.
+    [[nodiscard]] int StateIsOk() const;
 };
 
 /**
