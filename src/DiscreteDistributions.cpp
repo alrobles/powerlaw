@@ -43,7 +43,7 @@ void DiscreteEmpiricalDistribution::PrecalculateCDF(const std::vector<int>& sort
 
         for (int x = _xMin; x <= _xMax; ++x)
         {
-            const double foundIndex = VectorUtilities::IndexOf(sortedTailSample, x - 1);
+            const double foundIndex = VectorUtilities::IndexOf(sortedTailSample, x);
             const double cdfVal = 1.0 - (foundIndex / sortedTailSampleSize);
             _cdf.push_back(cdfVal);
         }

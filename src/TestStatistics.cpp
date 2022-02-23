@@ -24,16 +24,10 @@ double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const Discre
     return maxDiff;
 }
 
-double measure_ks_of_replica(const DiscretePowerLawDistribution& fittedModel, const SyntheticPowerLawGenerator& syntheticGenerator)
+double measure_ks_of_replica(const SyntheticPowerLawGenerator& syntheticGenerator)
 {
-    if (fittedModel.StateIsOk())
-    {
-        const vector<int> &syntheticSample = syntheticGenerator.GenerateSynthetic();
-        DiscreteEmpiricalDistribution empiricalSynthetic(syntheticSample, fittedModel.GetXMin());
-        return ks_statistic(empiricalSynthetic, fittedModel);
-    }
-    else
-        return numeric_limits<double>::infinity();
+    const vector<int> &syntheticSample = syntheticGenerator.GenerateSynthetic();
+    return calculate_ks_statistic_of_fit(syntheticSample);
 }
 
 double calculate_ks_statistic_of_fit(const vector<int> &sampleData)
@@ -75,7 +69,7 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
     if (mode == RuntimeMode::SingleThread)
     {
         for (int i = 0; i < replicas; ++i)
-            ksDistribution.push_back(measure_ks_of_replica(fittedModel, syntheticGenerator));
+            ksDistribution.push_back(measure_ks_of_replica(syntheticGenerator));
     }
     else if (mode == RuntimeMode::MultiThread)
     {
@@ -83,7 +77,7 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
         vector<future<double>> futures;
         futures.reserve(replicas);
         for (int i = 0; i < replicas; ++i)
-            futures.push_back(pool.submit(measure_ks_of_replica, fittedModel, syntheticGenerator));
+            futures.push_back(pool.submit(measure_ks_of_replica, syntheticGenerator));
 
         // Get results
         for (future<double>& result : futures)
