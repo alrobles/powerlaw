@@ -81,7 +81,7 @@ void calculate_gof(int* data, long dataLength, int xMin, int replicas)
 
     DiscretePowerLawDistribution model = fit_model(dataVec, xMin);
     const double ksStatistic = calculate_ks_statistic_of_fit(model, dataVec);
-    const double pValue = calculate_gof(model, dataVec, replicas);
+    const double pValue = calculate_fixed_min_gof(model, dataVec, replicas);
 
     MLPutFunction(stdlink, "Association", 2);
 

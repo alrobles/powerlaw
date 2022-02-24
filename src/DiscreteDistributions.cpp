@@ -72,6 +72,18 @@ int DiscreteEmpiricalDistribution::GetMaxElement() const
 *       DiscretePowerLawDistribution      *
 ******************************************/
 
+DiscretePowerLawDistribution::DiscretePowerLawDistribution(double alpha, int xMin, int xMax)
+{
+    _alpha = alpha;
+    _xMin = xMin;
+    _xMax = xMax;
+    _stateIsOk = (_xMin < _xMax);
+    _sampleSize = -1;
+
+    if (_stateIsOk)
+        PrecalculateCDF();
+}
+
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alpha, int xMin)
 {
     _alpha = alpha;
@@ -310,6 +322,14 @@ SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, c
     VectorUtilities::RemoveGreaterOrEqual(_notInTailData, xMin);
     _tailProbability = 1.0 - (double) _notInTailData.size() / (double) _sampleDataSize;
 }
+
+SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, int xMax, int replicaSize)
+: _powerLawDistribution(alpha, xMin, xMax)
+{
+    _sampleDataSize = replicaSize;
+    _tailProbability = 1.0;
+}
+
 
 int SyntheticPowerLawGenerator::SampleFromNotInTail() const
 {

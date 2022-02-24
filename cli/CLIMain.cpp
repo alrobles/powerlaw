@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
         cout << "Fitted model:" << endl;
         cout << "Alpha: " << model.GetAlpha() << "±" << model.GetStandardError() << endl;
         cout << "Fit KS statistic: " << calculate_ks_statistic_of_fit(model, data) << endl;
-        cout << "GoodnessOfFit: " << calculate_gof(model, data, bootstrapReplicas, runtimeMode) << endl;
+        cout << "GoodnessOfFit: " << calculate_fixed_min_gof(model, data, bootstrapReplicas, runtimeMode) << endl;
     }
 
     return 0;

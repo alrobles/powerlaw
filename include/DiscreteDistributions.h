@@ -58,6 +58,14 @@ private:
 
 public:
     /**
+     * Pure parametric constructor.
+     * @param alpha Known value for the alpha parameters.
+     * @param xMin Known value for the xMin parameter.
+     * @param xMax Maximum sample value.
+     */
+    DiscretePowerLawDistribution(double alpha, int xMin, int xMax);
+
+    /**
      * Constructor for a distribution with known parameters.
      * @param sampleData Used for estimation of xMax and sampleSize. Needed to calculate StandardError.
      * @param alpha Known value for the alpha parameters.
@@ -130,6 +138,15 @@ public:
      * @param sampleData Data to extract the non-powerlaw part of the sample.
      */
     SyntheticPowerLawGenerator(double alpha, int xMin, const std::vector<int>& sampleData);
+
+    /**
+     * Pure power-law synthetic generator
+     * @param alpha Alpha value of the fitted model.
+     * @param xMin xMin value of the fitted model.
+     * @param xMax Maximum sample value.
+     * @param replicaSize Size of the synthetic replica.
+     */
+    SyntheticPowerLawGenerator(double alpha, int xMin, int xMax, int replicaSize);
 
     /// Generates a synthetic replica of the sample data.
     [[nodiscard]] std::vector<int> GenerateSynthetic() const;
