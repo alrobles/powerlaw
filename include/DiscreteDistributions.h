@@ -45,18 +45,22 @@ class DiscretePowerLawDistribution
 {
 private:
     double _alpha;
+    double _ksStatistic;
     int _xMin, _xMax;
     int _sampleSize;
     bool _stateIsOk;
     std::vector<double> _cdf;
 
-    [[nodiscard]] int BinarySearch(int l, int r, double x) const;
     [[nodiscard]] double CalculateCDF(int x) const;
+    [[nodiscard]] int BinarySearch(int l, int r, double x) const;
     [[nodiscard]] double GetStandardError(int sampleSize) const;
-    static double AlphaMLEEstimation(const std::vector<int>& data, int xMin);
     void PrecalculateCDF();
 
 public:
+    static double AlphaMLEEstimationApproximated(const std::vector<int>& data, int xMin);
+    static double AlphaMLEEstimation(const std::vector<int>& data, int xMin);
+    static double CalculateLogLikelihood(const std::vector<int>& data, double alpha, int xMin);
+
     /**
      * Pure parametric constructor.
      * @param alpha Known value for the alpha parameters.
@@ -105,11 +109,15 @@ public:
     /// Obtain the cumulative density function at value x.
     [[nodiscard]] double GetCDF(int x) const;
 
+    [[nodiscard]] double GetKSStatistic() const;
+
     /// Obtain the estimated alpha value.
     [[nodiscard]] double GetAlpha() const;
 
     /// Obtain the estimated standard error for alpha.
     [[nodiscard]] double GetStandardError() const;
+
+    [[nodiscard]] double GetLogLikelihood(const std::vector<int>& data) const;
 
     /// Obtain the estimated xMin value.
     [[nodiscard]] int GetXMin() const;

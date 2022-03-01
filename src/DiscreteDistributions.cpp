@@ -41,7 +41,8 @@ void DiscreteEmpiricalDistribution::PrecalculateCDF(const std::vector<int>& sort
         const auto sortedTailSampleSize = (double) sortedTailSample.size();
         _cdf.reserve(_xMax - _xMin + 1);
 
-        for (int x = _xMin; x <= _xMax; ++x)
+        _cdf.push_back(1.0);
+        for (int x = _xMin; x < _xMax; ++x)
         {
             const double foundIndex = VectorUtilities::IndexOf(sortedTailSample, x);
             const double cdfVal = 1.0 - (foundIndex / sortedTailSampleSize);
@@ -94,6 +95,10 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const std::vector<int
 
     if (_stateIsOk)
         PrecalculateCDF();
+
+    // Calculate KS
+    DiscreteEmpiricalDistribution empiricalDistribution(sampleData, xMin);
+    _ksStatistic = ks_statistic(empiricalDistribution, *this);
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, int xMin)
 {
@@ -110,6 +115,10 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
 
     if (_stateIsOk)
         PrecalculateCDF();
+
+    // Calculate KS
+    DiscreteEmpiricalDistribution empiricalDistribution(sampleData, xMin);
+    _ksStatistic = ks_statistic(empiricalDistribution, *this);
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData)
 {
@@ -123,15 +132,15 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
 
         double minKs = std::numeric_limits<double>::infinity();
         int xMinEstimator = 0;
-        for (int x = minElement; x <= maxElement; ++x)
+        for (int x = minElement; x < maxElement; ++x)
         {
-            DiscreteEmpiricalDistribution empiricalDistribution(sampleData, x);
             DiscretePowerLawDistribution model(sampleData, x);
-            const double ks = ks_statistic(empiricalDistribution, model);
+            const double ks = model.GetKSStatistic();
             if (ks < minKs)
                 minKs = ks;
             else
             {
+                _ksStatistic = minKs;
                 xMinEstimator = x - 1;
                 break;
             }
@@ -152,7 +161,7 @@ void DiscretePowerLawDistribution::PrecalculateCDF()
         _cdf.push_back(CalculateCDF(x));
 }
 
-double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data, const int xMin)
+double DiscretePowerLawDistribution::AlphaMLEEstimationApproximated(const vector<int> &data, int xMin)
 {
     const auto n = (double) VectorUtilities::NumberOfGreaterOrEqual(data, xMin);
     double sum = 0.0;
@@ -163,6 +172,35 @@ double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data,
     }
 
     return 1.0 + (n / sum);
+}
+
+double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data, int xMin)
+{
+    const int lowerIntAlpha = 150;
+    const int upperIntAlpha = 351;
+    vector<double> logLikelihoods;
+    logLikelihoods.reserve(upperIntAlpha - lowerIntAlpha);
+
+    for (int intAlpha = lowerIntAlpha; intAlpha < upperIntAlpha; intAlpha++)
+    {
+        const double alpha = (double) intAlpha / 100.0;
+        logLikelihoods.push_back(CalculateLogLikelihood(data, alpha, xMin));
+    }
+
+    const int maxLikelihoodIntAlpha = VectorUtilities::IndexOfMax(logLikelihoods) + lowerIntAlpha;
+    return (double) maxLikelihoodIntAlpha / 100.0;
+}
+
+double DiscretePowerLawDistribution::CalculateLogLikelihood(const vector<int> &data, double alpha, int xMin)
+{
+    const auto n = (double) VectorUtilities::NumberOfGreaterOrEqual(data, xMin);
+
+    double logXSum = 0;
+    for (double x: data)
+        if (x >= xMin)
+            logXSum += log(x);
+
+    return - n * log(hurwitz_zeta(alpha, xMin).real()) - alpha * logXSum;
 }
 
 int DiscretePowerLawDistribution::BinarySearch(int l, int r, double x) const
@@ -179,12 +217,9 @@ int DiscretePowerLawDistribution::BinarySearch(int l, int r, double x) const
         {
             const double diff = abs(cdf - x);
             const double lDiff = abs(lCdf - x);
-            const double rDiff = abs(rCdf - x);
 
             if (lDiff < diff)
                 return mid - 1;
-            else if (rDiff < diff)
-                return mid + 1;
             else
                 return mid;
         }
@@ -214,20 +249,20 @@ int DiscretePowerLawDistribution::GenerateRandomSample() const
     if (_stateIsOk)
     {
         const double r = RandomGen::GetUniform01();
-        const double diff = 1 - r;
 
         // Find the search interval.
         int x1, x2;
         double cdf;
         x2 = _xMin;
-        do {
+        do
+        {
             x1 = x2;
             x2 = 2 * x1;
             cdf = GetCDF(x2);
-        } while (cdf >= diff);
+        } while (cdf >= r);
 
         // Find exact solution in the interval by binary search
-        const int searchResult = BinarySearch(x1, x2, diff);
+        const int searchResult = BinarySearch(x1, x2, r);
         const int randomNumber = clamp(searchResult % (_xMax + 1), _xMin, _xMax);
 
         return randomNumber;
@@ -261,6 +296,11 @@ double DiscretePowerLawDistribution::GetCDF(int x) const
     }
     else
         return numeric_limits<double>::quiet_NaN();
+}
+
+double DiscretePowerLawDistribution::GetKSStatistic() const
+{
+    return _ksStatistic;
 }
 
 double DiscretePowerLawDistribution::CalculateCDF(int x) const
@@ -302,6 +342,11 @@ double DiscretePowerLawDistribution::GetStandardError() const
 double DiscretePowerLawDistribution::GetStandardError(int sampleSize) const
 {
     return (_alpha - 1.0) / (double) sampleSize;
+}
+
+double DiscretePowerLawDistribution::GetLogLikelihood(const vector<int> &data) const
+{
+    return DiscretePowerLawDistribution::CalculateLogLikelihood(data, _alpha, _xMin);
 }
 
 int DiscretePowerLawDistribution::StateIsOk() const

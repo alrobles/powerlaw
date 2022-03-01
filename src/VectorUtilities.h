@@ -55,8 +55,16 @@ namespace VectorUtilities
     {
         return *max_element(v.begin(), v.end());
     }
+    template<typename T> int IndexOfMax(const std::vector<T>& v)
+    {
+        return static_cast<int>(max_element(v.begin(), v.end()) - v.begin());
+    }
     template<typename T> T Min(const std::vector<T>& v)
     {
         return *min_element(v.begin(), v.end());
+    }
+    template<typename T> int IndexOfMin(const std::vector<T>& v)
+    {
+        return static_cast<int>(min_element(v.begin(), v.end()) - v.begin());
     }
 }

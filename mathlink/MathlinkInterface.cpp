@@ -59,7 +59,7 @@ void calculate_gof(int* data, long dataLength, int replicas)
     vector<int> dataVec(data, data + dataLength);
 
     DiscretePowerLawDistribution model = fit_model(dataVec);
-    const double ksStatistic = calculate_ks_statistic_of_fit(model, dataVec);
+    const double ksStatistic = model.GetKSStatistic();
     const double pValue = calculate_gof(model, dataVec, replicas);
 
     MLPutFunction(stdlink, "Association", 2);
@@ -80,7 +80,7 @@ void calculate_gof(int* data, long dataLength, int xMin, int replicas)
     vector<int> dataVec(data, data + dataLength);
 
     DiscretePowerLawDistribution model = fit_model(dataVec, xMin);
-    const double ksStatistic = calculate_ks_statistic_of_fit(model, dataVec);
+    const double ksStatistic = model.GetKSStatistic();
     const double pValue = calculate_fixed_min_gof(model, dataVec, replicas);
 
     MLPutFunction(stdlink, "Association", 2);

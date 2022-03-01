@@ -31,7 +31,7 @@ struct Arg : public option::Arg
 
 enum optionIndex
 {
-    UNKNOWN, DATA, BOOTSTRAP_REPLICAS, XMIN, SINGLE_THREAD, HELP
+    UNKNOWN, DATA, BOOTSTRAP_REPLICAS, XMIN, ALPHA_MLE_APPROXIMATE, SINGLE_THREAD, HELP
 };
 
 const option::Descriptor usage[] =
@@ -40,6 +40,7 @@ const option::Descriptor usage[] =
         {DATA, 0,"d", "data", Arg::Required, "  -d <data_to_test>, \t--data=<data_to_test>  \tSample data as a list of comma-separated integers." },
         {BOOTSTRAP_REPLICAS, 0,"r", "replicas", Arg::Required, "  -r <number_of_replicas>, \t--replicas=<number_of_replicas>  \tNumber of bootstrap replicas. Default is 2000." },
         {XMIN, 0,"x", "x_min", Arg::Required, "  -x <xMin>, \t--x_min=<xMin>  \tKnown value of xMin if there is any." },
+        {ALPHA_MLE_APPROXIMATE,  0, "A", "--alpha_mle_approximate", Arg::None, "  -a, \t--alpha_mle_approximate  \tEstimate alpha with the approximate formula (faster but less accurate)." },
         {SINGLE_THREAD,  0, "s", "single_thread", Arg::None, "  -s, \t--single_thread  \tUse only one thread for the boot-strapping." },
         {HELP, 0,"", "help", Arg::None,    "  \t--help  \tShow instructions." },
         {0,0,0,0,0,0}
@@ -98,9 +99,9 @@ int main(int argc, char* argv[])
         DiscretePowerLawDistribution model = fit_model(data);
 
         cout << "Fitted model:" << endl;
-        cout << "Alpha: " << model.GetAlpha() << "±" << model.GetStandardError() << " xMin: " << model.GetXMin()
-             << endl;
-        cout << "Fit KS statistic: " << calculate_ks_statistic_of_fit(model, data) << endl;
+        cout << "Alpha: " << model.GetAlpha() << "±" << model.GetStandardError() << " xMin: " << model.GetXMin() << endl;
+        cout << "Fit KS statistic: " << model.GetKSStatistic() << endl;
+        cout << "Log-likelihood: " << model.GetLogLikelihood(data) << endl;
         cout << "GoodnessOfFit: " << calculate_gof(model, data, bootstrapReplicas, runtimeMode) << endl;
     }
     else
@@ -109,7 +110,8 @@ int main(int argc, char* argv[])
 
         cout << "Fitted model:" << endl;
         cout << "Alpha: " << model.GetAlpha() << "±" << model.GetStandardError() << endl;
-        cout << "Fit KS statistic: " << calculate_ks_statistic_of_fit(model, data) << endl;
+        cout << "Fit KS statistic: " << model.GetKSStatistic() << endl;
+        cout << "Log-likelihood: " << model.GetLogLikelihood(data) << endl;
         cout << "GoodnessOfFit: " << calculate_fixed_min_gof(model, data, bootstrapReplicas, runtimeMode) << endl;
     }
 

@@ -18,7 +18,11 @@ double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const Discre
     vector<double> diffs;
     diffs.reserve(xMax - xMin + 1);
     for (int x = xMin; x <= xMax; ++x)
-        diffs.push_back(abs(empirical.GetCDF(x) - model.GetCDF(x)));
+    {
+        const double empiricalCDF = empirical.GetCDF(x);
+        const double modelCDF = model.GetCDF(x);
+        diffs.push_back(abs(empiricalCDF - modelCDF));
+    }
 
     const double maxDiff = VectorUtilities::Max(diffs);
     return maxDiff;
@@ -27,40 +31,15 @@ double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const Discre
 double measure_ks_of_replica(const SyntheticPowerLawGenerator& syntheticGenerator)
 {
     const vector<int> &syntheticSample = syntheticGenerator.GenerateSynthetic();
-    return calculate_ks_statistic_of_fit(syntheticSample);
+    return fit_model(syntheticSample).GetKSStatistic();
 }
 
 double measure_ks_of_replica_fixed_min(const SyntheticPowerLawGenerator& syntheticGenerator, int xMin)
 {
     const vector<int> &syntheticSample = syntheticGenerator.GenerateSynthetic();
-    return calculate_ks_statistic_of_fit(syntheticSample, xMin);
+    return fit_model(syntheticSample, xMin).GetKSStatistic();
 }
 
-double calculate_ks_statistic_of_fit(const vector<int> &sampleData)
-{
-    return calculate_ks_statistic_of_fit(fit_model(sampleData), sampleData);
-}
-
-double calculate_ks_statistic_of_fit(const vector<int>& sampleData, int xMin)
-{
-    return calculate_ks_statistic_of_fit(fit_model(sampleData, xMin), sampleData);
-}
-
-double calculate_ks_statistic_of_fit(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData)
-{
-    if (fittedModel.StateIsOk())
-    {
-        DiscreteEmpiricalDistribution empirical(sampleData, fittedModel.GetXMin());
-        return ks_statistic(empirical, fittedModel);
-    }
-    else
-        return numeric_limits<double>::infinity();
-}
-
-double calculate_gof(const vector<int>& sampleData, int replicas, RuntimeMode mode)
-{
-    return calculate_gof(fit_model(sampleData), sampleData, replicas, mode);
-}
 double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas, RuntimeMode mode)
 {
     RandomGen::Seed();
@@ -69,9 +48,7 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
     if (!fittedModel.StateIsOk())
         return 0.0;
 
-    // Calculate KS-Statistic value of the fitted model.
-    DiscreteEmpiricalDistribution empirical(sampleData, fittedModel.GetXMin());
-    double testKsValue = ks_statistic(empirical, fittedModel);
+    const double testKsValue = fittedModel.GetKSStatistic();
 
     // Create KS-Statistic distribution from synthetic replicas.
     SyntheticPowerLawGenerator syntheticGenerator(fittedModel.GetAlpha(), fittedModel.GetXMin(), sampleData);
@@ -100,12 +77,6 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
     return (double) syntheticLargerThanEmpirical / (double) ksDistribution.size();
 }
 
-double calculate_fixed_min_gof(const vector<int> &sampleData, int xMin, int replicas, RuntimeMode mode)
-{
-    return calculate_fixed_min_gof(fit_model(sampleData, xMin), sampleData, replicas, mode);
-}
-
-
 double calculate_fixed_min_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData,
                                int replicas, RuntimeMode mode)
 {
@@ -115,9 +86,7 @@ double calculate_fixed_min_gof(const DiscretePowerLawDistribution &fittedModel, 
     if (!fittedModel.StateIsOk())
         return 0.0;
 
-    // Calculate KS-Statistic value of the fitted model.
-    DiscreteEmpiricalDistribution empirical(sampleData, fittedModel.GetXMin());
-    double testKsValue = ks_statistic(empirical, fittedModel);
+    const double testKsValue = fittedModel.GetKSStatistic();
 
     // Create KS-Statistic distribution from synthetic replicas.
     const int n = VectorUtilities::NumberOfGreaterOrEqual(sampleData, fittedModel.GetXMin());
