@@ -9,18 +9,6 @@ using namespace std;
 *      DiscreteEmpiricalDistribution      *
 ******************************************/
 
-DiscreteEmpiricalDistribution::DiscreteEmpiricalDistribution(const vector<int>& sampleData)
-{
-    // Select tail
-    vector<int> sortedTailSample = sampleData;
-    VectorUtilities::Sort(sortedTailSample);
-
-    // Assign and precalculate
-    _xMin = sortedTailSample.front();
-    _xMax = sortedTailSample.back();
-    PrecalculateCDF(sortedTailSample);
-}
-
 DiscreteEmpiricalDistribution::DiscreteEmpiricalDistribution(const vector<int>& sampleData, int xMin)
 {
     // Select tail
@@ -72,20 +60,6 @@ int DiscreteEmpiricalDistribution::GetMaxElement() const
 /******************************************
 *       DiscretePowerLawDistribution      *
 ******************************************/
-
-DiscretePowerLawDistribution::DiscretePowerLawDistribution(double alpha, int xMin, int xMax)
-{
-    _alpha = alpha;
-    _xMin = xMin;
-    _xMax = xMax;
-    _stateIsOk = (_xMin < _xMax);
-    _sampleSize = -1;
-    _ksStatistic = numeric_limits<double>::infinity();
-    _alphaPrecision = 0.01;
-
-    if (_stateIsOk)
-        PrecalculateCDF();
-}
 
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alpha, int xMin)
 {

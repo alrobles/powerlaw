@@ -15,12 +15,6 @@ private:
     void PrecalculateCDF(const std::vector<int>& sortedTailSample);
 public:
     /**
-     * Generic discrete empirical distribution.
-     * @param sampleData Any type of sample data.
-     */
-    explicit DiscreteEmpiricalDistribution(const std::vector<int>& sampleData);
-
-    /**
      * Power-law discrete empirical distribution with known xMin.
      * @param sampleData Power-law distributed sample data.
      * @param xMin Known cut-off value of xMin.
@@ -61,14 +55,6 @@ private:
 public:
     static double AlphaMLEEstimation(const std::vector<int>& data, int xMin, double precision = 0.01);
     static double CalculateLogLikelihood(const std::vector<int>& data, double alpha, int xMin);
-
-    /**
-     * Pure parametric constructor.
-     * @param alpha Known value for the alpha parameters.
-     * @param xMin Known value for the xMin parameter.
-     * @param xMax Maximum sample value.
-     */
-    DiscretePowerLawDistribution(double alpha, int xMin, int xMax);
 
     /**
      * Constructor for a distribution with known parameters.
