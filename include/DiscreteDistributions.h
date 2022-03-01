@@ -46,6 +46,7 @@ class DiscretePowerLawDistribution
 private:
     double _alpha;
     double _ksStatistic;
+    double _alphaPrecision;
     int _xMin, _xMax;
     int _sampleSize;
     bool _stateIsOk;
@@ -82,13 +83,13 @@ public:
      * @param sampleData Sample data to estimate alpha from.
      * @param xMin Known value for the xMin parameter.
      */
-    DiscretePowerLawDistribution(const std::vector<int>& sampleData, int xMin);
+    DiscretePowerLawDistribution(const std::vector<int>& sampleData, int xMin, double alphaPrecision = 0.01);
 
     /**
      * Constructor for a distribution with no known parameters. Estimates alpha and xMin from the sample data.
      * @param sampleData Data for the parameter estimation.
      */
-    explicit DiscretePowerLawDistribution(const std::vector<int>& sampleData);
+    explicit DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alphaPrecision = 0.01);
 
     /**
      * Generates a sequence of n power-law distributed random numbers.
@@ -113,6 +114,9 @@ public:
 
     /// Obtain the estimated alpha value.
     [[nodiscard]] double GetAlpha() const;
+
+    /// Obtain the precision in which estimate alpha values.
+    [[nodiscard]] double GetAlphaPrecision() const;
 
     /// Obtain the estimated standard error for alpha.
     [[nodiscard]] double GetStandardError() const;
@@ -148,15 +152,6 @@ public:
      * @param sampleData Data to extract the non-powerlaw part of the sample.
      */
     SyntheticPowerLawGenerator(double alpha, int xMin, const std::vector<int>& sampleData);
-
-    /**
-     * Pure power-law synthetic generator
-     * @param alpha Alpha value of the fitted model.
-     * @param xMin xMin value of the fitted model.
-     * @param xMax Maximum sample value.
-     * @param replicaSize Size of the synthetic replica.
-     */
-    SyntheticPowerLawGenerator(double alpha, int xMin, int xMax, int replicaSize);
 
     /// Generates a synthetic replica of the sample data.
     [[nodiscard]] std::vector<int> GenerateSynthetic() const;

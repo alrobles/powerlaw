@@ -8,10 +8,7 @@ enum class RuntimeMode
 };
 
 /// Generates a fitted model from sample data.
-DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData);
-
-/// Generates a fitted model from sample data with known xMin.
-DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, int xMin);
+DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, double alphaPrecision = 0.01);
 
 /**
  * Calculates the goodness of fit of a power-law model.
@@ -23,6 +20,3 @@ DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, int x
  */
 double calculate_gof(const DiscretePowerLawDistribution& fittedModel, const std::vector<int>& sampleData,
                      int replicas = 1000, RuntimeMode mode = RuntimeMode::MultiThread);
-
-double calculate_fixed_min_gof(const DiscretePowerLawDistribution& fittedModel, const std::vector<int>& sampleData,
-                               int replicas = 1000, RuntimeMode mode = RuntimeMode::MultiThread);
