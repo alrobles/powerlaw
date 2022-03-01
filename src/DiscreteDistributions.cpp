@@ -262,9 +262,7 @@ int DiscretePowerLawDistribution::GenerateRandomSample() const
         } while (cdf >= r);
 
         // Find exact solution in the interval by binary search
-        const int searchResult = BinarySearch(x1, x2, r);
-        const int randomNumber = clamp(searchResult % (_xMax + 1), _xMin, _xMax);
-
+        const int randomNumber = BinarySearch(x1, x2, r);
         return randomNumber;
     }
     else

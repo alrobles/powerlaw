@@ -31,7 +31,8 @@ double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const Discre
 double measure_ks_of_replica(const SyntheticPowerLawGenerator& syntheticGenerator)
 {
     const vector<int> &syntheticSample = syntheticGenerator.GenerateSynthetic();
-    return fit_model(syntheticSample).GetKSStatistic();
+    const DiscretePowerLawDistribution model = fit_model(syntheticSample);
+    return model.GetKSStatistic();
 }
 
 double measure_ks_of_replica_fixed_min(const SyntheticPowerLawGenerator& syntheticGenerator, int xMin)
