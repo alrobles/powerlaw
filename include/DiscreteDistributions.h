@@ -52,6 +52,7 @@ private:
     std::vector<double> _cdf;
 
     [[nodiscard]] double CalculateCDF(int x) const;
+    [[nodiscard]] double CalculateKSStatistic(const std::vector<int>& data) const;
     [[nodiscard]] int BinarySearch(int l, int r, double x) const;
     [[nodiscard]] double GetStandardError(int sampleSize) const;
     void PrecalculateCDF();

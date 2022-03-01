@@ -14,14 +14,6 @@ DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData);
 DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, int xMin);
 
 /**
- * Calculates the value of the Kolmogorov-Smirnov test statistic.
- * @param empirical Reference to an empirical distribution.
- * @param model Reference to a fitted power-law model.
- * @return The numeric value of the KS statistic.
- */
-double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const DiscretePowerLawDistribution& model);
-
-/**
  * Calculates the goodness of fit of a power-law model.
  * @param fittedModel Reference to the fitted power-law model.
  * @param sampleData Power-law distributed sample data.

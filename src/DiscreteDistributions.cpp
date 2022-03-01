@@ -94,11 +94,10 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const std::vector<int
     _sampleSize = (int) sampleData.size();
 
     if (_stateIsOk)
+    {
         PrecalculateCDF();
-
-    // Calculate KS
-    DiscreteEmpiricalDistribution empiricalDistribution(sampleData, xMin);
-    _ksStatistic = ks_statistic(empiricalDistribution, *this);
+        _ksStatistic = CalculateKSStatistic(sampleData);
+    }
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, int xMin)
 {
@@ -114,11 +113,10 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
         _stateIsOk = false;
 
     if (_stateIsOk)
+    {
         PrecalculateCDF();
-
-    // Calculate KS
-    DiscreteEmpiricalDistribution empiricalDistribution(sampleData, xMin);
-    _ksStatistic = ks_statistic(empiricalDistribution, *this);
+        _ksStatistic = CalculateKSStatistic(sampleData);
+    }
 }
 DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData)
 {
@@ -215,10 +213,7 @@ int DiscretePowerLawDistribution::BinarySearch(int l, int r, double x) const
         // If the value is between mid - 1 and mid + 1, select the one whose cdf is closer to x.
         if (x < lCdf && x > rCdf)
         {
-            const double diff = abs(cdf - x);
-            const double lDiff = abs(lCdf - x);
-
-            if (lDiff < diff)
+            if (x < lCdf && x > cdf)
                 return mid - 1;
             else
                 return mid;
@@ -290,7 +285,7 @@ double DiscretePowerLawDistribution::GetCDF(int x) const
         else if (x < _xMin)
             return 1.0;
         else
-            return 0.0;
+            return CalculateCDF(x);
     }
     else
         return numeric_limits<double>::quiet_NaN();
@@ -347,11 +342,35 @@ double DiscretePowerLawDistribution::GetLogLikelihood(const vector<int> &data) c
     return DiscretePowerLawDistribution::CalculateLogLikelihood(data, _alpha, _xMin);
 }
 
+double DiscretePowerLawDistribution::CalculateKSStatistic(const vector<int> &data) const
+{
+    DiscreteEmpiricalDistribution empirical(data, _xMin);
+
+    const int xMin = _xMin;
+    const int xMax = empirical.GetMaxElement();
+
+    // Error handling
+    if (xMin >= xMax || !StateIsOk())
+        return numeric_limits<double>::infinity();
+
+    vector<double> diffs;
+    diffs.reserve(xMax - xMin + 1);
+    for (int x = xMin; x <= xMax; ++x)
+    {
+        const double empiricalCDF = empirical.GetCDF(x);
+        const double modelCDF = GetCDF(x);
+        diffs.push_back(abs(empiricalCDF - modelCDF));
+    }
+
+    const double maxDiff = VectorUtilities::Max(diffs);
+    return maxDiff;
+}
+
+
 int DiscretePowerLawDistribution::StateIsOk() const
 {
     return _stateIsOk;
 }
-
 /******************************************
 *       SyntheticPowerLawGenerator        *
 ******************************************/
@@ -391,6 +410,5 @@ vector<int> SyntheticPowerLawGenerator::GenerateSynthetic() const
                                  _powerLawDistribution.GenerateRandomSample() : SampleFromNotInTail();
         syntheticDataset.push_back(randomNumber);
     }
-
     return syntheticDataset;
 }
