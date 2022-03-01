@@ -6,26 +6,14 @@ using namespace std;
 /// Threadpool used in the MultiThread runtime mode.
 static thread_pool pool;
 
-double ks_statistic(const DiscreteEmpiricalDistribution& empirical, const DiscretePowerLawDistribution& model)
+DiscretePowerLawDistribution fit_model(const vector<int> &sampleData)
 {
-    const int xMin = model.GetXMin();
-    const int xMax = empirical.GetMaxElement();
+    return DiscretePowerLawDistribution(sampleData);
+}
 
-    // Error handling
-    if (xMin >= xMax || !model.StateIsOk())
-        return numeric_limits<double>::infinity();
-
-    vector<double> diffs;
-    diffs.reserve(xMax - xMin + 1);
-    for (int x = xMin; x <= xMax; ++x)
-    {
-        const double empiricalCDF = empirical.GetCDF(x);
-        const double modelCDF = model.GetCDF(x);
-        diffs.push_back(abs(empiricalCDF - modelCDF));
-    }
-
-    const double maxDiff = VectorUtilities::Max(diffs);
-    return maxDiff;
+DiscretePowerLawDistribution fit_model(const vector<int> &sampleData, int xMin)
+{
+    return DiscretePowerLawDistribution(sampleData, xMin);
 }
 
 double measure_ks_of_replica(const SyntheticPowerLawGenerator& syntheticGenerator)
@@ -116,15 +104,4 @@ double calculate_fixed_min_gof(const DiscretePowerLawDistribution &fittedModel, 
 
     int syntheticLargerThanEmpirical = VectorUtilities::NumberOfGreater(ksDistribution, testKsValue);
     return (double) syntheticLargerThanEmpirical / (double) ksDistribution.size();
-}
-
-
-DiscretePowerLawDistribution fit_model(const vector<int> &sampleData)
-{
-    return DiscretePowerLawDistribution(sampleData);
-}
-
-DiscretePowerLawDistribution fit_model(const vector<int> &sampleData, int xMin)
-{
-    return DiscretePowerLawDistribution(sampleData, xMin);
 }

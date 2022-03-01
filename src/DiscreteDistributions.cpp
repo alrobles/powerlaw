@@ -80,6 +80,7 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(double alpha, int xMi
     _xMax = xMax;
     _stateIsOk = (_xMin < _xMax);
     _sampleSize = -1;
+    _ksStatistic = numeric_limits<double>::infinity();
 
     if (_stateIsOk)
         PrecalculateCDF();
@@ -132,7 +133,7 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
         int xMinEstimator = 0;
         for (int x = minElement; x < maxElement; ++x)
         {
-            DiscretePowerLawDistribution model(sampleData, x);
+            const DiscretePowerLawDistribution model(sampleData, x);
             const double ks = model.GetKSStatistic();
             if (ks < minKs)
                 minKs = ks;
@@ -159,34 +160,23 @@ void DiscretePowerLawDistribution::PrecalculateCDF()
         _cdf.push_back(CalculateCDF(x));
 }
 
-double DiscretePowerLawDistribution::AlphaMLEEstimationApproximated(const vector<int> &data, int xMin)
+double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data, int xMin, double precision)
 {
-    const auto n = (double) VectorUtilities::NumberOfGreaterOrEqual(data, xMin);
-    double sum = 0.0;
-    for (double x: data)
-    {
-        if (x >= xMin)
-            sum += log((double) x / (xMin - 0.5));
-    }
+    const int div = static_cast<int>(1.0 / precision);
+    const int lowerIntAlpha = static_cast<int>(1.50 * div);
+    const int upperIntAlpha = static_cast<int>(3.51 * div);
 
-    return 1.0 + (n / sum);
-}
-
-double DiscretePowerLawDistribution::AlphaMLEEstimation(const vector<int> &data, int xMin)
-{
-    const int lowerIntAlpha = 150;
-    const int upperIntAlpha = 351;
     vector<double> logLikelihoods;
     logLikelihoods.reserve(upperIntAlpha - lowerIntAlpha);
 
     for (int intAlpha = lowerIntAlpha; intAlpha < upperIntAlpha; intAlpha++)
     {
-        const double alpha = (double) intAlpha / 100.0;
+        const double alpha = (double) intAlpha / div;
         logLikelihoods.push_back(CalculateLogLikelihood(data, alpha, xMin));
     }
 
     const int maxLikelihoodIntAlpha = VectorUtilities::IndexOfMax(logLikelihoods) + lowerIntAlpha;
-    return (double) maxLikelihoodIntAlpha / 100.0;
+    return (double) maxLikelihoodIntAlpha / div;
 }
 
 double DiscretePowerLawDistribution::CalculateLogLikelihood(const vector<int> &data, double alpha, int xMin)
@@ -257,8 +247,7 @@ int DiscretePowerLawDistribution::GenerateRandomSample() const
         } while (cdf >= r);
 
         // Find exact solution in the interval by binary search
-        const int randomNumber = BinarySearch(x1, x2, r);
-        return randomNumber;
+        return BinarySearch(x1, x2, r);
     }
     else
         return numeric_limits<int>::quiet_NaN();
@@ -285,7 +274,7 @@ double DiscretePowerLawDistribution::GetCDF(int x) const
         else if (x < _xMin)
             return 1.0;
         else
-            return CalculateCDF(x);
+            return 0.0;
     }
     else
         return numeric_limits<double>::quiet_NaN();
@@ -293,7 +282,10 @@ double DiscretePowerLawDistribution::GetCDF(int x) const
 
 double DiscretePowerLawDistribution::GetKSStatistic() const
 {
-    return _ksStatistic;
+    if (_stateIsOk)
+        return _ksStatistic;
+    else
+        return numeric_limits<double>::infinity();
 }
 
 double DiscretePowerLawDistribution::CalculateCDF(int x) const
@@ -356,11 +348,7 @@ double DiscretePowerLawDistribution::CalculateKSStatistic(const vector<int> &dat
     vector<double> diffs;
     diffs.reserve(xMax - xMin + 1);
     for (int x = xMin; x <= xMax; ++x)
-    {
-        const double empiricalCDF = empirical.GetCDF(x);
-        const double modelCDF = GetCDF(x);
-        diffs.push_back(abs(empiricalCDF - modelCDF));
-    }
+        diffs.push_back(abs(empirical.GetCDF(x) - GetCDF(x)));
 
     const double maxDiff = VectorUtilities::Max(diffs);
     return maxDiff;
@@ -378,11 +366,11 @@ int DiscretePowerLawDistribution::StateIsOk() const
 SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, const vector<int>& sampleData)
 : _powerLawDistribution(sampleData, alpha, xMin)
 {
-    _notInTailData = sampleData;
-    _sampleDataSize = (int) sampleData.size();
+    _bulkData = sampleData;
+    VectorUtilities::RemoveGreaterOrEqual(_bulkData, xMin);
 
-    VectorUtilities::RemoveGreaterOrEqual(_notInTailData, xMin);
-    _tailProbability = 1.0 - (double) _notInTailData.size() / (double) _sampleDataSize;
+    _sampleDataSize = (int) sampleData.size();
+    _tailProbability = 1.0 - (double) _bulkData.size() / (double) _sampleDataSize;
 }
 
 SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, int xMax, int replicaSize)
@@ -393,22 +381,31 @@ SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, i
 }
 
 
-int SyntheticPowerLawGenerator::SampleFromNotInTail() const
+int SyntheticPowerLawGenerator::SampleFromBulk() const
 {
-    const int randomIndex = RandomGen::GetInt((int)_notInTailData.size() - 1);
-    const int randomNumber = _notInTailData[randomIndex];
+    const int randomIndex = RandomGen::GetInt((int)_bulkData.size() - 1);
+    const int randomNumber = _bulkData[randomIndex];
     return randomNumber;
+}
+
+std::vector<int> SyntheticPowerLawGenerator::SampleFromBulk(int n) const
+{
+    vector<int> bulkSamples;
+    bulkSamples.reserve(n);
+    for (int i = 0; i < n; ++i)
+        bulkSamples.push_back(SampleFromBulk());
+
+    return bulkSamples;
 }
 
 vector<int> SyntheticPowerLawGenerator::GenerateSynthetic() const
 {
     vector<int> syntheticDataset;
     syntheticDataset.reserve(_sampleDataSize);
-    for (int i = 0; i < _sampleDataSize; ++i)
-    {
-        const int randomNumber = (RandomGen::GetUniform01() < _tailProbability) ?
-                                 _powerLawDistribution.GenerateRandomSample() : SampleFromNotInTail();
-        syntheticDataset.push_back(randomNumber);
-    }
+
+    const int tailSampleSize = floor(_tailProbability * _sampleDataSize);
+    VectorUtilities::Insert(syntheticDataset, _powerLawDistribution.GenerateRandomSequence(tailSampleSize));
+    VectorUtilities::Insert(syntheticDataset, SampleFromBulk(_sampleDataSize - tailSampleSize));
+
     return syntheticDataset;
 }

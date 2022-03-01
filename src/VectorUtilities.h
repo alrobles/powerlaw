@@ -31,6 +31,10 @@ namespace VectorUtilities
     {
         std::sort(v.begin(), v.end());
     }
+    template<typename T> void Insert(std::vector<T>& v1, const std::vector<T>& v2)
+    {
+        v1.insert(v1.end(), v2.begin(), v2.end());
+    }
     template<typename T> int IndexOf(const std::vector<T>& v, T n)
     {
         return static_cast<int>(upper_bound(v.begin(), v.end(), n) - v.begin());

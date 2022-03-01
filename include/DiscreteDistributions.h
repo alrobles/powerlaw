@@ -58,8 +58,7 @@ private:
     void PrecalculateCDF();
 
 public:
-    static double AlphaMLEEstimationApproximated(const std::vector<int>& data, int xMin);
-    static double AlphaMLEEstimation(const std::vector<int>& data, int xMin);
+    static double AlphaMLEEstimation(const std::vector<int>& data, int xMin, double precision = 0.01);
     static double CalculateLogLikelihood(const std::vector<int>& data, double alpha, int xMin);
 
     /**
@@ -118,6 +117,7 @@ public:
     /// Obtain the estimated standard error for alpha.
     [[nodiscard]] double GetStandardError() const;
 
+    // Obtain the log-likelihood that the sample was drawn from the model.
     [[nodiscard]] double GetLogLikelihood(const std::vector<int>& data) const;
 
     /// Obtain the estimated xMin value.
@@ -134,11 +134,12 @@ class SyntheticPowerLawGenerator
 {
 private:
     DiscretePowerLawDistribution _powerLawDistribution;
-    std::vector<int> _notInTailData;
+    std::vector<int> _bulkData;
     double _tailProbability;
     int _sampleDataSize;
 
-    [[nodiscard]] int SampleFromNotInTail() const;
+    [[nodiscard]] int SampleFromBulk() const;
+    [[nodiscard]] std::vector<int> SampleFromBulk(int n) const;
 public:
     /**
      * Default constructor that takes the parameters of a fitted model.
