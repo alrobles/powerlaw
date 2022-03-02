@@ -33,6 +33,27 @@ void fit_model(int* data, long dataLength)
     MLEndPacket(stdlink);
 }
 
+void fit_model(int* data, long dataLength, int xMin)
+{
+    vector<int> dataVec(data, data + dataLength);
+
+    DiscretePowerLawDistribution model = fit_model(dataVec, xMin);
+    const double alpha = model.GetAlpha();
+    const double stdError = model.GetStandardError();
+
+    MLPutFunction(stdlink, "Association", 2);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "Alpha");
+    MLPutReal(stdlink, alpha);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "AlphaStandardError");
+    MLPutReal(stdlink, stdError);
+
+    MLEndPacket(stdlink);
+}
+
 void calculate_gof(int* data, long dataLength, int replicas)
 {
     vector<int> dataVec(data, data + dataLength);
@@ -54,6 +75,26 @@ void calculate_gof(int* data, long dataLength, int replicas)
     MLEndPacket(stdlink);
 }
 
+void calculate_gof(int* data, long dataLength, int xMin, int replicas)
+{
+    vector<int> dataVec(data, data + dataLength);
+
+    DiscretePowerLawDistribution model = fit_model(dataVec, xMin);
+    const double ksStatistic = model.GetKSStatistic();
+    const double pValue = calculate_fixed_min_gof(model, dataVec, replicas);
+
+    MLPutFunction(stdlink, "Association", 2);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "p-value");
+    MLPutReal(stdlink, pValue);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "KS-Statistic");
+    MLPutReal(stdlink, ksStatistic);
+
+    MLEndPacket(stdlink);
+}
 
 /****************************
 *   Mathlink entry point    *
