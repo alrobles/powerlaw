@@ -32,7 +32,7 @@ struct Arg : public option::Arg
 
 enum optionIndex
 {
-    UNKNOWN, DATA, BOOTSTRAP_REPLICAS, ALPHA_PRECISION, SINGLE_THREAD, HELP
+    UNKNOWN, DATA, BOOTSTRAP_REPLICAS, ALPHA_PRECISION, XMIN, SINGLE_THREAD, HELP
 };
 
 const option::Descriptor usage[] =
@@ -41,6 +41,7 @@ const option::Descriptor usage[] =
         {DATA, 0,"d", "data", Arg::Required, "  -d <data_to_test>, \t--data=<data_to_test>  \tSample data as a list of comma-separated integers." },
         {BOOTSTRAP_REPLICAS, 0,"r", "replicas", Arg::Required, "  -r <number_of_replicas>, \t--replicas=<number_of_replicas>  \tNumber of bootstrap replicas. Default is 2000." },
         {ALPHA_PRECISION, 0,"a", "alpha_precision", Arg::Required, "  -a <least_significant>, \t--alpha_precision=<least_significant>  \tPrecision for alpha estimation. Default is 0.01." },
+        {XMIN, 0,"x", "x_min", Arg::Required, "  -x <xMin>, \t--x_min=<xMin>  \tKnown value of xMin if there is any." },
         {SINGLE_THREAD,  0, "s", "single_thread", Arg::None, "  -s, \t--single_thread  \tUse only one thread for the boot-strapping." },
         {HELP, 0,"", "help", Arg::None,    "  \t--help  \tShow instructions." },
         {0,0,0,0,0,0}
@@ -50,6 +51,7 @@ int main(int argc, char* argv[])
 {
     vector<int> data;
     int bootstrapReplicas = 2000;
+    int xMin = -1;
     double alphaPrecision = 0.01;
     RuntimeMode runtimeMode = RuntimeMode::MultiThread;
 
@@ -86,6 +88,9 @@ int main(int argc, char* argv[])
             case ALPHA_PRECISION:
                 alphaPrecision = stod(opt.arg);
                 break;
+            case XMIN:
+                xMin = stoi(opt.arg);
+                break;
             case SINGLE_THREAD:
                 runtimeMode = RuntimeMode::SingleThread;
                 break;
@@ -95,16 +100,30 @@ int main(int argc, char* argv[])
     }
 
     chrono::steady_clock::time_point beginTime, endTime; // Used for benchmark.
-    DiscretePowerLawDistribution model = fit_model(data, alphaPrecision);
 
     cout << "Fitted model:" << endl;
-    cout << "Alpha: " << model.GetAlpha() << "±" << model.GetStandardError() << " xMin: " << model.GetXMin() << endl;
-    cout << "Fit KS statistic: " << model.GetKSStatistic() << endl;
-    cout << "Log-likelihood: " << model.GetLogLikelihood(data) << endl;
+    if (xMin == -1) // No known value for xMin.
+    {
+        DiscretePowerLawDistribution model = fit_model(data, alphaPrecision);
+        cout << "Alpha: " << model.GetAlpha() << "±" << model.GetStandardError() << " xMin: " << model.GetXMin() << endl;
+        cout << "Fit KS statistic: " << model.GetKSStatistic() << endl;
+        cout << "Log-likelihood: " << model.GetLogLikelihood(data) << endl;
 
-    beginTime = std::chrono::steady_clock::now();
-    cout << "GoodnessOfFit: " << calculate_gof(model, data, bootstrapReplicas, runtimeMode) << endl;
-    endTime = std::chrono::steady_clock::now();
+        beginTime = std::chrono::steady_clock::now();
+        cout << "GoodnessOfFit: " << calculate_gof(model, data, bootstrapReplicas, runtimeMode) << endl;
+        endTime = std::chrono::steady_clock::now();
+    }
+    else
+    {
+        DiscretePowerLawDistribution model = fit_model(data, xMin, alphaPrecision);
+        cout << "Alpha: " << model.GetAlpha() << "±" << model.GetStandardError() << endl;
+        cout << "Fit KS statistic: " << model.GetKSStatistic() << endl;
+        cout << "Log-likelihood: " << model.GetLogLikelihood(data) << endl;
+
+        beginTime = std::chrono::steady_clock::now();
+        cout << "GoodnessOfFit: " << calculate_fixed_min_gof(model, data, bootstrapReplicas, runtimeMode) << endl;
+        endTime = std::chrono::steady_clock::now();
+    }
 
     auto timePerReplica = chrono::duration_cast<chrono::microseconds>(endTime - beginTime).count();
     cout << "Benchmark: " << timePerReplica / bootstrapReplicas << " [µs] per replica" << endl;
