@@ -56,8 +56,8 @@ vector<double> measure_bootstrap_ks(const SyntheticPowerLawGenerator& syntheticG
     return ksDistribution;
 }
 
-vector<double> measure_bootstrap_ks_fixed_xmin(const SyntheticPowerLawGenerator& syntheticGenerator, int xMin,
-                                               int replicas, RuntimeMode mode, double alphaPrecision)
+vector<double> measure_bootstrap_ks_fixed_min(const SyntheticPowerLawGenerator& syntheticGenerator, int xMin,
+                                              int replicas, RuntimeMode mode, double alphaPrecision)
 {
     vector<double> ksDistribution;
     ksDistribution.reserve(replicas);
@@ -117,8 +117,8 @@ double calculate_fixed_min_gof(const DiscretePowerLawDistribution &fittedModel, 
     const int xMin = fittedModel.GetXMin();
     const int xMax = VectorUtilities::Max(sampleData);
     SyntheticPowerLawGenerator syntheticGenerator(fittedModel.GetAlpha(), xMin, xMax, n);
-    vector<double> ksDistribution = measure_bootstrap_ks_fixed_xmin(syntheticGenerator, xMin, replicas, mode,
-                                                                    fittedModel.GetAlphaPrecision());
+    vector<double> ksDistribution = measure_bootstrap_ks_fixed_min(syntheticGenerator, xMin, replicas, mode,
+                                                                   fittedModel.GetAlphaPrecision());
 
     // Measure p-value
     int syntheticLargerThanEmpirical = VectorUtilities::NumberOfGreater(ksDistribution, testKsValue);
