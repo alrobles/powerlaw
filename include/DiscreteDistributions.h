@@ -31,6 +31,11 @@ public:
     [[nodiscard]] int GetMaxElement() const;
 };
 
+enum class TestStatisticType
+{
+    None, KolmogorovSmirnov, CramerVonMises, AndersonDarling
+};
+
 /**
  * Implementation of a discrete power law distribution as described in https://arxiv.org/abs/0706.1062
  * Can be used for parameter estimation, generating a power-law distributed sample and obtaining PDF and CDF values.
@@ -38,8 +43,9 @@ public:
 class DiscretePowerLawDistribution
 {
 private:
+    TestStatisticType _testStatisticType;
     double _alpha;
-    double _ksStatistic;
+    double _testStatistic;
     double _alphaPrecision;
     int _xMin, _xMax;
     int _sampleSize;
@@ -47,7 +53,10 @@ private:
     std::vector<double> _cdf;
 
     [[nodiscard]] double CalculateCDF(int x) const;
-    [[nodiscard]] double CalculateKSStatistic(const std::vector<int>& data) const;
+    [[nodiscard]] double CalculateKolmogorovSmirnovStatistic(const std::vector<int>& data) const;
+    [[nodiscard]] double CalculateCramerVonMisesStatistic(const std::vector<int>& data) const;
+    [[nodiscard]] double CalculateAndersonDarlingStatistic(const std::vector<int>& data) const;
+    [[nodiscard]] double CalculateTestStatistic(const std::vector<int>& data, TestStatisticType type) const;
     [[nodiscard]] int BinarySearch(int l, int r, double x) const;
     [[nodiscard]] double GetStandardError(int sampleSize) const;
     void PrecalculateCDF();
@@ -57,33 +66,24 @@ public:
     static double CalculateLogLikelihood(const std::vector<int>& data, double alpha, int xMin);
 
     /**
-     * Pure parametric constructor.
-     * @param alpha Known value for the alpha parameters.
-     * @param xMin Known value for the xMin parameter.
-     * @param xMax Maximum sample value.
+     * Copy constructor
      */
-    DiscretePowerLawDistribution(double alpha, int xMin, int xMax);
-
-    /**
-     * Constructor for a distribution with known parameters.
-     * @param sampleData Used for estimation of xMax and sampleSize. Needed to calculate StandardError.
-     * @param alpha Known value for the alpha parameters.
-     * @param xMin Known value for the xMin parameter.
-     */
-    DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alpha, int xMin);
+    DiscretePowerLawDistribution(const DiscretePowerLawDistribution& other);
 
     /**
      * Constructor for a distribution with known xMin. Estimates alpha from the sample.
      * @param sampleData Sample data to estimate alpha from.
      * @param xMin Known value for the xMin parameter.
      */
-    DiscretePowerLawDistribution(const std::vector<int>& sampleData, int xMin, double alphaPrecision = 0.01);
+    DiscretePowerLawDistribution(const std::vector<int>& sampleData, int xMin, double alphaPrecision = 0.01,
+                                 TestStatisticType testStatisticType = TestStatisticType::KolmogorovSmirnov);
 
     /**
      * Constructor for a distribution with no known parameters. Estimates alpha and xMin from the sample data.
      * @param sampleData Data for the parameter estimation.
      */
-    explicit DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alphaPrecision = 0.01);
+    explicit DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alphaPrecision = 0.01,
+                                          TestStatisticType testStatisticType = TestStatisticType::KolmogorovSmirnov);
 
     /**
      * Generates a sequence of n power-law distributed random numbers.
@@ -104,7 +104,7 @@ public:
     /// Obtain the cumulative density function at value x.
     [[nodiscard]] double GetCDF(int x) const;
 
-    [[nodiscard]] double GetKSStatistic() const;
+    [[nodiscard]] double GetTestStatistic() const;
 
     /// Obtain the estimated alpha value.
     [[nodiscard]] double GetAlpha() const;
@@ -123,6 +123,10 @@ public:
 
     /// Check that there arent any error conditions.
     [[nodiscard]] int StateIsOk() const;
+
+    [[nodiscard]] TestStatisticType GetTestStatisticType() const;
+
+    [[nodiscard]] std::string GetTestStatisticTypeStr() const;
 };
 
 /**
@@ -141,21 +145,20 @@ private:
 public:
     /**
      * Default constructor that takes the parameters of a fitted model.
-     * @param alpha Alpha value of the fitted model.
-     * @param xMin xMin value of the fitted model.
+     * @param model Fitted model.
      * @param sampleData Data to extract the non-powerlaw part of the sample.
      */
-    SyntheticPowerLawGenerator(double alpha, int xMin, const std::vector<int>& sampleData);
+    SyntheticPowerLawGenerator(const DiscretePowerLawDistribution& model, const std::vector<int>& sampleData);
 
     /**
      * Pure power-law synthetic generator
-     * @param alpha Alpha value of the fitted model.
-     * @param xMin xMin value of the fitted model.
-     * @param xMax Maximum sample value.
+     * @param model Fitted model.
      * @param replicaSize Size of the synthetic replica.
      */
-    SyntheticPowerLawGenerator(double alpha, int xMin, int xMax, int replicaSize);
+    SyntheticPowerLawGenerator(const DiscretePowerLawDistribution& model, int replicaSize);
 
     /// Generates a synthetic replica of the sample data.
     [[nodiscard]] std::vector<int> GenerateSynthetic() const;
+
+    [[nodiscard]] const DiscretePowerLawDistribution& GetModel() const;
 };

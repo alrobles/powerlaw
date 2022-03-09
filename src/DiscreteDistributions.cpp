@@ -61,39 +61,26 @@ int DiscreteEmpiricalDistribution::GetMaxElement() const
 *       DiscretePowerLawDistribution      *
 ******************************************/
 
-DiscretePowerLawDistribution::DiscretePowerLawDistribution(double alpha, int xMin, int xMax)
+DiscretePowerLawDistribution::DiscretePowerLawDistribution(const DiscretePowerLawDistribution &other)
 {
-    _alpha = alpha;
-    _xMin = xMin;
-    _xMax = xMax;
-    _stateIsOk = (_xMin < _xMax);
-    _sampleSize = -1;
-    _alphaPrecision = 0.01;
-    _ksStatistic = numeric_limits<double>::infinity();
-
-    if (_stateIsOk)
-        PrecalculateCDF();
+    _alpha = other._alpha;
+    _xMin = other._xMin;
+    _xMax = other._xMax;
+    _stateIsOk = other._stateIsOk;
+    _sampleSize = other._sampleSize;
+    _alphaPrecision = other._alphaPrecision;
+    _testStatisticType = other._testStatisticType;
+    _testStatistic = other._testStatistic;
+    _cdf = other._cdf;
 }
 
-DiscretePowerLawDistribution::DiscretePowerLawDistribution(const std::vector<int>& sampleData, double alpha, int xMin)
-{
-    _alpha = alpha;
-    _xMin = xMin;
-    _xMax = VectorUtilities::Max(sampleData);
-    _stateIsOk = (_xMin < _xMax) && !sampleData.empty();
-    _sampleSize = (int) sampleData.size();
-    _alphaPrecision = 0.01;
-
-    if (_stateIsOk)
-    {
-        PrecalculateCDF();
-        _ksStatistic = CalculateKSStatistic(sampleData);
-    }
-}
-DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, int xMin, double alphaPrecision)
+DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, int xMin, double alphaPrecision,
+                                                           TestStatisticType testStatisticType)
 {
     _xMin = xMin;
     _alphaPrecision = alphaPrecision;
+    _testStatisticType = testStatisticType;
+
     if (!sampleData.empty())
     {
         _xMax = VectorUtilities::Max(sampleData);
@@ -107,13 +94,15 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
     if (_stateIsOk)
     {
         PrecalculateCDF();
-        _ksStatistic = CalculateKSStatistic(sampleData);
+        _testStatistic = CalculateTestStatistic(sampleData, testStatisticType);
     }
 }
-DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, double alphaPrecision)
+DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sampleData, double alphaPrecision,
+                                                           TestStatisticType testStatisticType)
 {
     _stateIsOk = !sampleData.empty();
     _alphaPrecision = alphaPrecision;
+    _testStatisticType = testStatisticType;
 
     if (_stateIsOk)
     {
@@ -121,17 +110,16 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
         const int minElement = VectorUtilities::Min(sampleData);
         const int maxElement = VectorUtilities::Max(sampleData);
 
-        double minKs = std::numeric_limits<double>::infinity();
+        double minKsStatistic = std::numeric_limits<double>::infinity();
         int xMinEstimator = 0;
         for (int x = minElement; x < maxElement; ++x)
         {
-            const DiscretePowerLawDistribution model(sampleData, x, alphaPrecision);
-            const double ks = model.GetKSStatistic();
-            if (ks < minKs)
-                minKs = ks;
+            const DiscretePowerLawDistribution model(sampleData, x, alphaPrecision, TestStatisticType::KolmogorovSmirnov);
+            const double ksStatistic = model.GetTestStatistic();
+            if (ksStatistic < minKsStatistic)
+                minKsStatistic = ksStatistic;
             else
             {
-                _ksStatistic = minKs;
                 xMinEstimator = x - 1;
                 break;
             }
@@ -142,6 +130,7 @@ DiscretePowerLawDistribution::DiscretePowerLawDistribution(const vector<int> &sa
         _alpha = AlphaMLEEstimation(sampleData, _xMin, alphaPrecision);
         _sampleSize = VectorUtilities::NumberOfGreaterOrEqual(sampleData, _xMin);
         PrecalculateCDF();
+        _testStatistic = CalculateTestStatistic(sampleData, testStatisticType);
     }
 }
 
@@ -272,10 +261,10 @@ double DiscretePowerLawDistribution::GetCDF(int x) const
         return numeric_limits<double>::quiet_NaN();
 }
 
-double DiscretePowerLawDistribution::GetKSStatistic() const
+double DiscretePowerLawDistribution::GetTestStatistic() const
 {
     if (_stateIsOk)
-        return _ksStatistic;
+        return _testStatistic;
     else
         return numeric_limits<double>::infinity();
 }
@@ -331,7 +320,22 @@ double DiscretePowerLawDistribution::GetLogLikelihood(const vector<int> &data) c
     return DiscretePowerLawDistribution::CalculateLogLikelihood(data, _alpha, _xMin);
 }
 
-double DiscretePowerLawDistribution::CalculateKSStatistic(const vector<int> &data) const
+double DiscretePowerLawDistribution::CalculateTestStatistic(const vector<int> &data, TestStatisticType type) const
+{
+    switch (type)
+    {
+        case TestStatisticType::KolmogorovSmirnov:
+            return CalculateKolmogorovSmirnovStatistic(data);
+        case TestStatisticType::CramerVonMises:
+            return CalculateCramerVonMisesStatistic(data);
+        case TestStatisticType::AndersonDarling:
+            return CalculateAndersonDarlingStatistic(data);
+        default:
+            return numeric_limits<double>::infinity();
+    }
+}
+
+double DiscretePowerLawDistribution::CalculateKolmogorovSmirnovStatistic(const vector<int> &data) const
 {
     DiscreteEmpiricalDistribution empirical(data, _xMin);
 
@@ -351,27 +355,94 @@ double DiscretePowerLawDistribution::CalculateKSStatistic(const vector<int> &dat
     return maxDiff;
 }
 
+double DiscretePowerLawDistribution::CalculateCramerVonMisesStatistic(const vector<int> &data) const
+{
+    DiscreteEmpiricalDistribution empirical(data, _xMin);
+
+    const int xMin = _xMin;
+    const int xMax = empirical.GetMaxElement();
+    const int N = (int) data.size();
+
+    // Error handling
+    if (xMin >= xMax || !StateIsOk())
+        return numeric_limits<double>::infinity();
+
+    vector<double> sumElements;
+    sumElements.reserve(xMax - xMin + 1);
+    for (int x = xMin; x <= xMax; ++x)
+        sumElements.push_back(pow(empirical.GetCDF(x) - GetCDF(x), 2.0) * GetPDF(x));
+
+    return N * VectorUtilities::Total(sumElements);
+}
+
+double DiscretePowerLawDistribution::CalculateAndersonDarlingStatistic(const vector<int> &data) const
+{
+    DiscreteEmpiricalDistribution empirical(data, _xMin);
+
+    const int xMin = _xMin;
+    const int xMax = empirical.GetMaxElement();
+    const int N = (int) data.size();
+
+    // Error handling
+    if (xMin >= xMax || !StateIsOk())
+        return numeric_limits<double>::infinity();
+
+    vector<double> sumElements;
+    sumElements.reserve(xMax - xMin + 1);
+    for (int x = xMin; x <= xMax; ++x)
+    {
+        const double numerator = pow(empirical.GetCDF(x) - GetCDF(x), 2.0) * GetPDF(x);
+        const double denominator = GetCDF(x) * (1.0 - GetCDF(x));
+        if (denominator != 0)
+            sumElements.push_back(numerator / denominator);
+        else
+            sumElements.push_back(0.0);
+    }
+    return N * VectorUtilities::Total(sumElements);
+}
 
 int DiscretePowerLawDistribution::StateIsOk() const
 {
     return _stateIsOk;
 }
+
+TestStatisticType DiscretePowerLawDistribution::GetTestStatisticType() const
+{
+    return _testStatisticType;
+}
+
+string DiscretePowerLawDistribution::GetTestStatisticTypeStr() const
+{
+    switch(_testStatisticType)
+    {
+        case TestStatisticType::KolmogorovSmirnov:
+            return "Kolmogorov-Smirnov";
+        case TestStatisticType::CramerVonMises:
+            return "Cramer-VonMises";
+        case TestStatisticType::AndersonDarling:
+            return "Anderson-Darling";
+        case TestStatisticType::None:
+        default:
+            return "<unknown>";
+    }
+}
+
 /******************************************
 *       SyntheticPowerLawGenerator        *
 ******************************************/
 
-SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, const vector<int>& sampleData)
-: _powerLawDistribution(sampleData, alpha, xMin)
+SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(const DiscretePowerLawDistribution &model, const vector<int>& sampleData)
+: _powerLawDistribution(model)
 {
     _bulkData = sampleData;
-    VectorUtilities::RemoveGreaterOrEqual(_bulkData, xMin);
+    VectorUtilities::RemoveGreaterOrEqual(_bulkData, model.GetXMin());
 
     _sampleDataSize = (int) sampleData.size();
     _tailProbability = 1.0 - (double) _bulkData.size() / (double) _sampleDataSize;
 }
 
-SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(double alpha, int xMin, int xMax, int replicaSize)
-        : _powerLawDistribution(alpha, xMin, xMax)
+SyntheticPowerLawGenerator::SyntheticPowerLawGenerator(const DiscretePowerLawDistribution &model, int replicaSize)
+: _powerLawDistribution(model)
 {
     _sampleDataSize = replicaSize;
     _tailProbability = 1.0;
@@ -404,4 +475,9 @@ vector<int> SyntheticPowerLawGenerator::GenerateSynthetic() const
     VectorUtilities::Insert(syntheticDataset, SampleFromBulk(_sampleDataSize - tailSampleSize));
 
     return syntheticDataset;
+}
+
+const DiscretePowerLawDistribution& SyntheticPowerLawGenerator::GetModel() const
+{
+    return _powerLawDistribution;
 }

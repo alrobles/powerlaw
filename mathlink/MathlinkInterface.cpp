@@ -1,17 +1,42 @@
 #include <vector>
+#include <map>
 #include "mathlink.h"
 #include "../include/TestStatistics.h"
 using namespace std;
+
+double alphaPrecision = 0.01;
+TestStatisticType testStatisticType = TestStatisticType::KolmogorovSmirnov;
+
+map<string, TestStatisticType> argToType = {
+        { "KolmogorovSmirnov", TestStatisticType::KolmogorovSmirnov },
+        { "CramerVonMises", TestStatisticType::CramerVonMises },
+        { "AndersonDarling", TestStatisticType::AndersonDarling }
+};
 
 #if defined(WINDOWS_MATHLINK)
 #include <windows.h>
 #endif
 
+void set_alpha_precision(double precision)
+{
+    alphaPrecision = precision;
+    MLPutSymbol(stdlink, "Null");
+    MLEndPacket(stdlink);
+}
+
+void set_test_statistic(const char* testStatistic)
+{
+    string testStatisticStr = testStatistic;
+    testStatisticType = argToType[testStatisticStr];
+    MLPutSymbol(stdlink, "Null");
+    MLEndPacket(stdlink);
+}
+
 void fit_model(int* data, long dataLength)
 {
     vector<int> dataVec(data, data + dataLength);
 
-    DiscretePowerLawDistribution model = fit_model(dataVec);
+    DiscretePowerLawDistribution model = fit_model(dataVec, alphaPrecision, testStatisticType);
     const double alpha = model.GetAlpha();
     const double stdError = model.GetStandardError();
     const int xMin = model.GetXMin();
@@ -37,7 +62,7 @@ void fit_model(int* data, long dataLength, int xMin)
 {
     vector<int> dataVec(data, data + dataLength);
 
-    DiscretePowerLawDistribution model = fit_model(dataVec, xMin);
+    DiscretePowerLawDistribution model = fit_model(dataVec, xMin, alphaPrecision, testStatisticType);
     const double alpha = model.GetAlpha();
     const double stdError = model.GetStandardError();
 
@@ -58,19 +83,24 @@ void calculate_gof(int* data, long dataLength, int replicas)
 {
     vector<int> dataVec(data, data + dataLength);
 
-    DiscretePowerLawDistribution model = fit_model(dataVec);
-    const double ksStatistic = model.GetKSStatistic();
+    DiscretePowerLawDistribution model = fit_model(dataVec, alphaPrecision, testStatisticType);
+    const double testStatistic = model.GetTestStatistic();
+    const string testStatisticTypeName = model.GetTestStatisticTypeStr();
     const double pValue = calculate_gof(model, dataVec, replicas);
 
-    MLPutFunction(stdlink, "Association", 2);
+    MLPutFunction(stdlink, "Association", 3);
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "p-value");
     MLPutReal(stdlink, pValue);
 
     MLPutFunction(stdlink, "Rule", 2);
-    MLPutString(stdlink, "KS-Statistic");
-    MLPutReal(stdlink, ksStatistic);
+    MLPutString(stdlink, "Test-Statistic");
+    MLPutReal(stdlink, testStatistic);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "Test-Statistic Type");
+    MLPutString(stdlink, testStatisticTypeName.c_str());
 
     MLEndPacket(stdlink);
 }
@@ -79,19 +109,24 @@ void calculate_gof(int* data, long dataLength, int xMin, int replicas)
 {
     vector<int> dataVec(data, data + dataLength);
 
-    DiscretePowerLawDistribution model = fit_model(dataVec, xMin);
-    const double ksStatistic = model.GetKSStatistic();
+    DiscretePowerLawDistribution model = fit_model(dataVec, xMin, alphaPrecision, testStatisticType);
+    const double testStatistic = model.GetTestStatistic();
+    const string testStatisticTypeName = model.GetTestStatisticTypeStr();
     const double pValue = calculate_fixed_min_gof(model, dataVec, replicas);
 
-    MLPutFunction(stdlink, "Association", 2);
+    MLPutFunction(stdlink, "Association", 3);
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "p-value");
     MLPutReal(stdlink, pValue);
 
     MLPutFunction(stdlink, "Rule", 2);
-    MLPutString(stdlink, "KS-Statistic");
-    MLPutReal(stdlink, ksStatistic);
+    MLPutString(stdlink, "Test-Statistic");
+    MLPutReal(stdlink, testStatistic);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "Test-Statistic Type");
+    MLPutString(stdlink, testStatisticTypeName.c_str());
 
     MLEndPacket(stdlink);
 }

@@ -1,4 +1,20 @@
 :Begin:
+:Function:       set_alpha_precision
+:Pattern:        SetAlphaPrecision[precision_Real]
+:Arguments:      { precision }
+:ArgumentTypes:  { Real }
+:ReturnType:     Manual
+:End:
+
+:Begin:
+:Function:       set_test_statistic
+:Pattern:        SetTestStatistic[testStatistic_String]
+:Arguments:      { testStatistic }
+:ArgumentTypes:  { String }
+:ReturnType:     Manual
+:End:
+
+:Begin:
 :Function:       fit_model
 :Pattern:        PowerlawFitModel[data_List]
 :Arguments:      { data }

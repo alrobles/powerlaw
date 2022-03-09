@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <sstream>
+#include <numeric>
 
 namespace VectorUtilities
 {
@@ -30,6 +31,10 @@ namespace VectorUtilities
     template<typename T> void Sort(std::vector<T>& v)
     {
         std::sort(v.begin(), v.end());
+    }
+    template<typename T> T Total(std::vector<T>& v)
+    {
+        return std::accumulate(v.begin(), v.end(), T());
     }
     template<typename T> void Insert(std::vector<T>& v1, const std::vector<T>& v2)
     {

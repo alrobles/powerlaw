@@ -6,40 +6,44 @@ using namespace std;
 /// Threadpool used in the MultiThread runtime mode.
 static thread_pool pool;
 
-DiscretePowerLawDistribution fit_model(const vector<int> &sampleData, double alphaPrecision)
+DiscretePowerLawDistribution fit_model(const vector<int> &sampleData, double alphaPrecision, TestStatisticType testStatisticType)
 {
-    return DiscretePowerLawDistribution(sampleData, alphaPrecision);
+    return DiscretePowerLawDistribution(sampleData, alphaPrecision, testStatisticType);
 }
 
-DiscretePowerLawDistribution fit_model(const vector<int> &sampleData, int xMin, double alphaPrecision)
+DiscretePowerLawDistribution fit_model(const vector<int> &sampleData, int xMin, double alphaPrecision, TestStatisticType testStatisticType)
 {
-    return DiscretePowerLawDistribution(sampleData, xMin, alphaPrecision);
+    return DiscretePowerLawDistribution(sampleData, xMin, alphaPrecision, testStatisticType);
 }
 
-double measure_ks_of_replica(const SyntheticPowerLawGenerator& syntheticGenerator, double alphaPrecision)
+double measure_test_statistic_of_replica(const SyntheticPowerLawGenerator& syntheticGenerator)
 {
     const vector<int> &syntheticSample = syntheticGenerator.GenerateSynthetic();
-    const DiscretePowerLawDistribution model = fit_model(syntheticSample, alphaPrecision);
-    return model.GetKSStatistic();
+    const TestStatisticType testStatisticType = syntheticGenerator.GetModel().GetTestStatisticType();
+    const double alphaPrecision = syntheticGenerator.GetModel().GetAlphaPrecision();
+    const DiscretePowerLawDistribution model = fit_model(syntheticSample, alphaPrecision, testStatisticType);
+    return model.GetTestStatistic();
 }
 
-double measure_ks_of_replica_fixed_min(const SyntheticPowerLawGenerator& syntheticGenerator, int xMin, double alphaPrecision)
+double measure_test_statistic_of_replica_fixed_min(const SyntheticPowerLawGenerator& syntheticGenerator)
 {
     const vector<int> &syntheticSample = syntheticGenerator.GenerateSynthetic();
-    const DiscretePowerLawDistribution model = fit_model(syntheticSample, xMin, alphaPrecision);
-    return model.GetKSStatistic();
+    const TestStatisticType testStatisticType = syntheticGenerator.GetModel().GetTestStatisticType();
+    const double alphaPrecision = syntheticGenerator.GetModel().GetAlphaPrecision();
+    const int xMin = syntheticGenerator.GetModel().GetXMin();
+    const DiscretePowerLawDistribution model = fit_model(syntheticSample, xMin, alphaPrecision, testStatisticType);
+    return model.GetTestStatistic();
 }
 
-vector<double> measure_bootstrap_ks(const SyntheticPowerLawGenerator& syntheticGenerator, int replicas, RuntimeMode mode,
-                                    double alphaPrecision)
+vector<double> measure_bootstrap_test_statistic(const SyntheticPowerLawGenerator& syntheticGenerator, int replicas, RuntimeMode mode)
 {
-    vector<double> ksDistribution;
-    ksDistribution.reserve(replicas);
+    vector<double> tsDistribution;
+    tsDistribution.reserve(replicas);
 
     if (mode == RuntimeMode::SingleThread)
     {
         for (int i = 0; i < replicas; ++i)
-            ksDistribution.push_back(measure_ks_of_replica(syntheticGenerator, alphaPrecision));
+            tsDistribution.push_back(measure_test_statistic_of_replica(syntheticGenerator));
     }
     else if (mode == RuntimeMode::MultiThread)
     {
@@ -47,25 +51,26 @@ vector<double> measure_bootstrap_ks(const SyntheticPowerLawGenerator& syntheticG
         vector<future<double>> futures;
         futures.reserve(replicas);
         for (int i = 0; i < replicas; ++i)
-            futures.push_back(pool.submit(measure_ks_of_replica, syntheticGenerator, alphaPrecision));
+            futures.push_back(pool.submit(measure_test_statistic_of_replica, syntheticGenerator));
 
         // Get results
         for (future<double>& result : futures)
-            ksDistribution.push_back(result.get());
+            tsDistribution.push_back(result.get());
     }
-    return ksDistribution;
+    return tsDistribution;
 }
 
-vector<double> measure_bootstrap_ks_fixed_min(const SyntheticPowerLawGenerator& syntheticGenerator, int xMin,
-                                              int replicas, RuntimeMode mode, double alphaPrecision)
+vector<double> measure_bootstrap_test_statistic_fixed_min(const SyntheticPowerLawGenerator& syntheticGenerator,
+                                                          int replicas, RuntimeMode mode)
 {
-    vector<double> ksDistribution;
-    ksDistribution.reserve(replicas);
+    vector<double> tsDistribution;
+    tsDistribution.reserve(replicas);
 
     if (mode == RuntimeMode::SingleThread)
     {
         for (int i = 0; i < replicas; ++i)
-            ksDistribution.push_back(measure_ks_of_replica_fixed_min(syntheticGenerator, xMin, alphaPrecision));
+            tsDistribution.push_back(
+                    measure_test_statistic_of_replica_fixed_min(syntheticGenerator));
     }
     else if (mode == RuntimeMode::MultiThread)
     {
@@ -73,13 +78,14 @@ vector<double> measure_bootstrap_ks_fixed_min(const SyntheticPowerLawGenerator& 
         vector<future<double>> futures;
         futures.reserve(replicas);
         for (int i = 0; i < replicas; ++i)
-            futures.push_back(pool.submit(measure_ks_of_replica_fixed_min, syntheticGenerator, xMin, alphaPrecision));
+            futures.push_back(
+                    pool.submit(measure_test_statistic_of_replica_fixed_min, syntheticGenerator));
 
         // Get results
         for (future<double>& result : futures)
-            ksDistribution.push_back(result.get());
+            tsDistribution.push_back(result.get());
     }
-    return ksDistribution;
+    return tsDistribution;
 }
 
 double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas, RuntimeMode mode)
@@ -90,11 +96,11 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
     if (!fittedModel.StateIsOk())
         return 0.0;
 
-    const double testKsValue = fittedModel.GetKSStatistic();
+    const double testKsValue = fittedModel.GetTestStatistic();
 
     // Create KS-Statistic distribution from synthetic replicas.
-    SyntheticPowerLawGenerator syntheticGenerator(fittedModel.GetAlpha(), fittedModel.GetXMin(), sampleData);
-    vector<double> ksDistribution = measure_bootstrap_ks(syntheticGenerator, replicas, mode, fittedModel.GetAlphaPrecision());
+    SyntheticPowerLawGenerator syntheticGenerator(fittedModel, sampleData);
+    vector<double> ksDistribution = measure_bootstrap_test_statistic(syntheticGenerator, replicas, mode);
 
     // Measure p-value
     int syntheticLargerThanEmpirical = VectorUtilities::NumberOfGreater(ksDistribution, testKsValue);
@@ -110,15 +116,12 @@ double calculate_fixed_min_gof(const DiscretePowerLawDistribution &fittedModel, 
     if (!fittedModel.StateIsOk())
         return 0.0;
 
-    const double testKsValue = fittedModel.GetKSStatistic();
+    const double testKsValue = fittedModel.GetTestStatistic();
 
     // Create KS-Statistic distribution from synthetic replicas.
     const int n = VectorUtilities::NumberOfGreaterOrEqual(sampleData, fittedModel.GetXMin());
-    const int xMin = fittedModel.GetXMin();
-    const int xMax = VectorUtilities::Max(sampleData);
-    SyntheticPowerLawGenerator syntheticGenerator(fittedModel.GetAlpha(), xMin, xMax, n);
-    vector<double> ksDistribution = measure_bootstrap_ks_fixed_min(syntheticGenerator, xMin, replicas, mode,
-                                                                   fittedModel.GetAlphaPrecision());
+    SyntheticPowerLawGenerator syntheticGenerator(fittedModel, n);
+    vector<double> ksDistribution = measure_bootstrap_test_statistic_fixed_min(syntheticGenerator, replicas, mode);
 
     // Measure p-value
     int syntheticLargerThanEmpirical = VectorUtilities::NumberOfGreater(ksDistribution, testKsValue);

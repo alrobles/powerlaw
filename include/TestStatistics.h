@@ -8,10 +8,12 @@ enum class RuntimeMode
 };
 
 /// Generates a fitted model from sample data.
-DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, double alphaPrecision = 0.01);
+DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, double alphaPrecision = 0.01,
+                                       TestStatisticType testStatisticType = TestStatisticType::KolmogorovSmirnov);
 
 /// Generates a fitted model from sample data with known xMin.
-DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, int xMin, double alphaPrecision = 0.01);
+DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, int xMin, double alphaPrecision = 0.01,
+                                       TestStatisticType testStatisticType = TestStatisticType::KolmogorovSmirnov);
 
 /**
  * Calculates the goodness of fit of a power-law model.
