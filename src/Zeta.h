@@ -36,6 +36,4 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 */
 #pragma once
-#include <complex>
-typedef std::complex<double> cdouble;
-cdouble hurwitz_zeta(double s, cdouble a, int N = 50);
+double real_hurwitz_zeta(double s, double a, int N = 50);

@@ -9,6 +9,7 @@
 #include <gsl/gsl_sf.h>
 #include <complex>
 #include "Zeta.h"
+using namespace std;
 
 /*! Number of entries */
 constexpr int B_2n_fact_size = 51;
@@ -67,29 +68,29 @@ constexpr double B_2n_fact[B_2n_fact_size] = {
         1.2006125993354507e-78,
         -3.0411872415142924e-80};
 
-cdouble S(double s, cdouble a, int N)
+complex<double> S(double s, complex<double> a, int N)
 {
-    cdouble sum = 0.;
+    complex<double> sum = 0.;
     for (int k = 0; k <= N - 1; k += 1)
-        sum += pow(a + static_cast<cdouble>(k), -s);
+        sum += pow(a + static_cast<complex<double>>(k), -s);
 
     return sum;
 }
 
-cdouble I(double s, cdouble a, int N)
+complex<double> I(double s, complex<double> a, int N)
 {
-    return pow(a + static_cast<cdouble>(N), 1. - s) / (s - 1.);
+    return pow(a + static_cast<complex<double>>(N), 1. - s) / (s - 1.);
 }
 
-cdouble T(double s, cdouble a, int N, int M)
+complex<double> T(double s, complex<double> a, int N, int M)
 {
-    const cdouble d = a + static_cast<cdouble>(N);
-    const cdouble factor = pow(d, -s);
+    const complex<double> d = a + static_cast<complex<double>>(N);
+    const complex<double> factor = pow(d, -s);
 
     if (M > B_2n_fact_size)
         M = B_2n_fact_size;
 
-    cdouble sum = 0.0;
+    complex<double> sum = 0.0;
 
     for (int k = 1; k <= M; k += 1)
         sum += B_2n_fact[k] * gsl_sf_poch(s, 2. * k - 1.) / pow(d, 2 * k - 1);
@@ -97,10 +98,15 @@ cdouble T(double s, cdouble a, int N, int M)
     return factor * (0.5 + sum);
 }
 
-cdouble hurwitz_zeta(double s, cdouble a, int N)
+complex<double> hurwitz_zeta(double s, complex<double> a, int N)
 {
     if (N > B_2n_fact_size)
         N = B_2n_fact_size;
 
     return S(s, a, N) + I(s, a, N) + T(s, a, N, N);
+}
+
+double real_hurwitz_zeta(double s, double a, int N)
+{
+    return hurwitz_zeta(s, a, N).real();
 }

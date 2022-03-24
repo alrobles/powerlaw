@@ -60,6 +60,10 @@ namespace VectorUtilities
     {
         return static_cast<int>(count_if(v.begin(), v.end(),[&](auto const& val){ return val <= n; }));
     }
+    template<typename T> int NumberInInterval(const std::vector<T>& v, T min, T max)
+    {
+        return static_cast<int>(count_if(v.begin(), v.end(),[&](auto const& val){ return (val >= min && val <= max); }));
+    }
     template<typename T> T Max(const std::vector<T>& v)
     {
         return *max_element(v.begin(), v.end());

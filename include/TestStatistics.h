@@ -7,14 +7,6 @@ enum class RuntimeMode
     SingleThread, MultiThread
 };
 
-/// Generates a fitted model from sample data.
-DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, double alphaPrecision = 0.01,
-                                       TestStatisticType testStatisticType = TestStatisticType::KolmogorovSmirnov);
-
-/// Generates a fitted model from sample data with known xMin.
-DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, int xMin, double alphaPrecision = 0.01,
-                                       TestStatisticType testStatisticType = TestStatisticType::KolmogorovSmirnov);
-
 /**
  * Calculates the goodness of fit of a power-law model.
  * @param fittedModel Reference to the fitted power-law model.
@@ -25,14 +17,3 @@ DiscretePowerLawDistribution fit_model(const std::vector<int>& sampleData, int x
  */
 double calculate_gof(const DiscretePowerLawDistribution& fittedModel, const std::vector<int>& sampleData,
                      int replicas = 1000, RuntimeMode mode = RuntimeMode::MultiThread);
-
-/**
- * Calculates the goodness of fit of a power-law model with known xMin.
- * @param fittedModel Reference to the fitted power-law model.
- * @param sampleData Power-law distributed sample data.
- * @param replicas Number of bootstrap replicas.
- * @param mode Whether run the process as a single thread or multi thread.
- * @return A p-value that represents the goodness of fit.
- */
-double calculate_fixed_min_gof(const DiscretePowerLawDistribution& fittedModel, const std::vector<int>& sampleData,
-                               int replicas = 1000, RuntimeMode mode = RuntimeMode::MultiThread);
