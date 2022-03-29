@@ -1,23 +1,13 @@
 #include "../include/TestStatistics.h"
 #include "ThreadPool.h"
 #include "VectorUtilities.h"
+#include "ProgressBar.h"
 using namespace std;
 
-/// Threadpool used in the MultiThread runtime mode.
+/// Thread pool used in the MultiThread runtime mode.
 static thread_pool pool;
 
-double measure_test_statistic_of_replica(const SyntheticPowerLawGenerator& syntheticGenerator)
-{
-    const vector<int> &syntheticSample = syntheticGenerator.GenerateSynthetic();
-    const TestStatisticType testStatisticType = syntheticGenerator.GetModel().GetTestStatisticType();
-    const DistributionType distributionType = syntheticGenerator.GetModel().GetDistributionType();
-    const double alphaPrecision = syntheticGenerator.GetModel().GetAlphaPrecision();
-
-    const DiscretePowerLawDistribution model(syntheticSample, alphaPrecision, testStatisticType, distributionType);
-    return model.GetTestStatistic();
-}
-
-vector<double> measure_bootstrap_test_statistic(const SyntheticPowerLawGenerator& syntheticGenerator, int replicas, RuntimeMode mode)
+vector<double> measure_bootstrap_ks_statistic(const SyntheticPowerLawGenerator& syntheticGenerator, int replicas, RuntimeMode mode)
 {
     vector<double> tsDistribution;
     tsDistribution.reserve(replicas);
@@ -25,7 +15,11 @@ vector<double> measure_bootstrap_test_statistic(const SyntheticPowerLawGenerator
     if (mode == RuntimeMode::SingleThread)
     {
         for (int i = 0; i < replicas; ++i)
-            tsDistribution.push_back(measure_test_statistic_of_replica(syntheticGenerator));
+        {
+            progress_bar(i, 0, replicas, 1);
+            tsDistribution.push_back(syntheticGenerator.MeasureKsStatisticOfReplica());
+        }
+        progress_bar(1.0);
     }
     else if (mode == RuntimeMode::MultiThread)
     {
@@ -33,16 +27,21 @@ vector<double> measure_bootstrap_test_statistic(const SyntheticPowerLawGenerator
         vector<future<double>> futures;
         futures.reserve(replicas);
         for (int i = 0; i < replicas; ++i)
-            futures.push_back(pool.submit(measure_test_statistic_of_replica, syntheticGenerator));
+            futures.push_back(pool.submit([&syntheticGenerator]{ return syntheticGenerator.MeasureKsStatisticOfReplica();}));
 
         // Get results
         for (future<double>& result : futures)
+        {
             tsDistribution.push_back(result.get());
+            progress_bar((double)(&result - &futures[0]), 0.0, (double) futures.size(), 1.0);
+        }
+        progress_bar(1.0);
     }
     return tsDistribution;
 }
 
-double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas, RuntimeMode mode)
+double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vector<int> &sampleData, int replicas,
+                     SyntheticGeneratorMode syntheticGeneratorMode, RuntimeMode runtimeMode)
 {
     RandomGen::Seed();
 
@@ -50,11 +49,11 @@ double calculate_gof(const DiscretePowerLawDistribution &fittedModel, const vect
     if (!fittedModel.StateIsValid())
         return 0.0;
 
-    const double testKsValue = fittedModel.GetTestStatistic();
+    const double testKsValue = fittedModel.GetKSStatistic();
 
     // Create KS-Statistic distribution from synthetic replicas.
-    SyntheticPowerLawGenerator syntheticGenerator(fittedModel, sampleData);
-    vector<double> ksDistribution = measure_bootstrap_test_statistic(syntheticGenerator, replicas, mode);
+    SyntheticPowerLawGenerator syntheticGenerator(fittedModel, sampleData, syntheticGeneratorMode);
+    vector<double> ksDistribution = measure_bootstrap_ks_statistic(syntheticGenerator, replicas, runtimeMode);
 
     // Measure p-value
     int syntheticLargerThanEmpirical = VectorUtilities::NumberOfGreater(ksDistribution, testKsValue);

@@ -1,17 +1,11 @@
 #include <vector>
+#include <string>
 #include <map>
 #include "mathlink.h"
 #include "../include/TestStatistics.h"
 using namespace std;
 
 double alphaPrecision = 0.01;
-TestStatisticType testStatisticType = TestStatisticType::KolmogorovSmirnov;
-
-map<string, TestStatisticType> argToType = {
-        { "KolmogorovSmirnov", TestStatisticType::KolmogorovSmirnov },
-        { "CramerVonMises", TestStatisticType::CramerVonMises },
-        { "AndersonDarling", TestStatisticType::AndersonDarling }
-};
 
 #if defined(WINDOWS_MATHLINK)
 #include <windows.h>
@@ -24,24 +18,19 @@ void set_alpha_precision(double precision)
     MLEndPacket(stdlink);
 }
 
-void set_test_statistic(const char* testStatistic)
-{
-    string testStatisticStr = testStatistic;
-    testStatisticType = argToType[testStatisticStr];
-    MLPutSymbol(stdlink, "Null");
-    MLEndPacket(stdlink);
-}
-
-void fit_model(int* data, long dataLength)
+void fit_model(int* data, long dataLength, const char* distributionType)
 {
     vector<int> dataVec(data, data + dataLength);
+    DistributionType distTypeEnum = (string(distributionType) == "RightBounded") ?
+                                    DistributionType::RightBounded : DistributionType::LeftBounded;
 
-    DiscretePowerLawDistribution model = fit_model(dataVec, alphaPrecision, testStatisticType);
+    DiscretePowerLawDistribution model(dataVec, alphaPrecision, distTypeEnum);
     const double alpha = model.GetAlpha();
     const double stdError = model.GetStandardError();
     const int xMin = model.GetXMin();
+    const int xMax = model.GetXMax();
 
-    MLPutFunction(stdlink, "Association", 3);
+    MLPutFunction(stdlink, "Association", 4);
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "Alpha");
@@ -53,20 +42,28 @@ void fit_model(int* data, long dataLength)
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "xMin");
-    MLPutReal(stdlink, xMin);
+    MLPutInteger(stdlink, xMin);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "xMax");
+    MLPutInteger(stdlink, xMax);
 
     MLEndPacket(stdlink);
 }
 
-void fit_model(int* data, long dataLength, int xMin)
+void fit_model(int* data, long dataLength, int xParameter, const char* distributionType)
 {
     vector<int> dataVec(data, data + dataLength);
+    DistributionType distTypeEnum = (string(distributionType) == "RightBounded") ?
+            DistributionType::RightBounded : DistributionType::LeftBounded;
 
-    DiscretePowerLawDistribution model = fit_model(dataVec, xMin, alphaPrecision, testStatisticType);
+    DiscretePowerLawDistribution model(dataVec, xParameter, alphaPrecision, distTypeEnum);
     const double alpha = model.GetAlpha();
     const double stdError = model.GetStandardError();
+    const int xMin = model.GetXMin();
+    const int xMax = model.GetXMax();
 
-    MLPutFunction(stdlink, "Association", 2);
+    MLPutFunction(stdlink, "Association", 4);
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "Alpha");
@@ -76,6 +73,14 @@ void fit_model(int* data, long dataLength, int xMin)
     MLPutString(stdlink, "AlphaStandardError");
     MLPutReal(stdlink, stdError);
 
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "xMin");
+    MLPutInteger(stdlink, xMin);
+
+    MLPutFunction(stdlink, "Rule", 2);
+    MLPutString(stdlink, "xMax");
+    MLPutInteger(stdlink, xMax);
+
     MLEndPacket(stdlink);
 }
 
@@ -83,50 +88,46 @@ void calculate_gof(int* data, long dataLength, int replicas)
 {
     vector<int> dataVec(data, data + dataLength);
 
-    DiscretePowerLawDistribution model = fit_model(dataVec, alphaPrecision, testStatisticType);
-    const double testStatistic = model.GetTestStatistic();
-    const string testStatisticTypeName = model.GetTestStatisticTypeStr();
+    DiscretePowerLawDistribution model(dataVec, alphaPrecision);
+    const double ksStatistic = model.GetKSStatistic();
     const double pValue = calculate_gof(model, dataVec, replicas);
 
-    MLPutFunction(stdlink, "Association", 3);
+    MLPutFunction(stdlink, "Association", 2);
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "p-value");
     MLPutReal(stdlink, pValue);
 
     MLPutFunction(stdlink, "Rule", 2);
-    MLPutString(stdlink, "Test-Statistic");
-    MLPutReal(stdlink, testStatistic);
-
-    MLPutFunction(stdlink, "Rule", 2);
-    MLPutString(stdlink, "Test-Statistic Type");
-    MLPutString(stdlink, testStatisticTypeName.c_str());
+    MLPutString(stdlink, "KS-Statistic");
+    MLPutReal(stdlink, ksStatistic);
 
     MLEndPacket(stdlink);
 }
 
-void calculate_gof(int* data, long dataLength, int xMin, int replicas)
+void calculate_gof(int* data, long dataLength, int replicas, int xParameter, const char* distributionType,
+                   const char* syntheticGeneratorMode)
 {
     vector<int> dataVec(data, data + dataLength);
+    DistributionType distTypeEnum = (string(distributionType) == "RightBounded") ?
+                                    DistributionType::RightBounded : DistributionType::LeftBounded;
+    SyntheticGeneratorMode syntheticGeneratorModeEnum = (string(syntheticGeneratorMode) == "FullParametric") ?
+                                                        SyntheticGeneratorMode::FullParametric :
+                                                        SyntheticGeneratorMode::SemiParametric;
 
-    DiscretePowerLawDistribution model = fit_model(dataVec, xMin, alphaPrecision, testStatisticType);
-    const double testStatistic = model.GetTestStatistic();
-    const string testStatisticTypeName = model.GetTestStatisticTypeStr();
-    const double pValue = calculate_fixed_min_gof(model, dataVec, replicas);
+    DiscretePowerLawDistribution model(dataVec, xParameter, alphaPrecision, distTypeEnum);
+    const double ksStatistic = model.GetKSStatistic();
+    const double pValue = calculate_gof(model, dataVec, replicas, syntheticGeneratorModeEnum);
 
-    MLPutFunction(stdlink, "Association", 3);
+    MLPutFunction(stdlink, "Association", 2);
 
     MLPutFunction(stdlink, "Rule", 2);
     MLPutString(stdlink, "p-value");
     MLPutReal(stdlink, pValue);
 
     MLPutFunction(stdlink, "Rule", 2);
-    MLPutString(stdlink, "Test-Statistic");
-    MLPutReal(stdlink, testStatistic);
-
-    MLPutFunction(stdlink, "Rule", 2);
-    MLPutString(stdlink, "Test-Statistic Type");
-    MLPutString(stdlink, testStatisticTypeName.c_str());
+    MLPutString(stdlink, "KS-Statistic");
+    MLPutReal(stdlink, ksStatistic);
 
     MLEndPacket(stdlink);
 }

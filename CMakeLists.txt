@@ -30,6 +30,8 @@ if (CLI_BUILD)
             src/TestStatistics.cpp
             src/DiscreteDistributions.cpp
             src/VectorUtilities.h
+            src/ProgressBar.h
+            src/ProgressBar.cpp
             include/DiscreteDistributions.h
             include/RandomGen.h
             include/TestStatistics.h
@@ -46,6 +48,8 @@ elseif(LIB_BUILD)
             src/TestStatistics.cpp
             src/DiscreteDistributions.cpp
             src/VectorUtilities.h
+            src/ProgressBar.h
+            src/ProgressBar.cpp
             include/DiscreteDistributions.h
             include/RandomGen.h
             include/TestStatistics.h)
@@ -70,6 +74,8 @@ elseif(MATHLINK_BUILD)
             src/TestStatistics.cpp
             src/DiscreteDistributions.cpp
             src/VectorUtilities.h
+            src/ProgressBar.h
+            src/ProgressBar.cpp
             include/DiscreteDistributions.h
             include/RandomGen.h
             include/TestStatistics.h

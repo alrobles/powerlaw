@@ -7,26 +7,18 @@
 :End:
 
 :Begin:
-:Function:       set_test_statistic
-:Pattern:        SetTestStatistic[testStatistic_String]
-:Arguments:      { testStatistic }
-:ArgumentTypes:  { String }
+:Function:       fit_model
+:Pattern:        PowerlawFitModel[data_List, distributionType_String]
+:Arguments:      { data, distributionType }
+:ArgumentTypes:  { IntegerList, String }
 :ReturnType:     Manual
 :End:
 
 :Begin:
 :Function:       fit_model
-:Pattern:        PowerlawFitModel[data_List]
-:Arguments:      { data }
-:ArgumentTypes:  { IntegerList }
-:ReturnType:     Manual
-:End:
-
-:Begin:
-:Function:       fit_model
-:Pattern:        PowerlawFitModel[data_List, xMin_Integer]
-:Arguments:      { data, xMin }
-:ArgumentTypes:  { IntegerList, Integer }
+:Pattern:        PowerlawFitModel[data_List, xParameter_Integer, distributionType_String]
+:Arguments:      { data, xParameter, distributionType }
+:ArgumentTypes:  { IntegerList, Integer, String }
 :ReturnType:     Manual
 :End:
 
@@ -40,8 +32,8 @@
 
 :Begin:
 :Function:       calculate_gof
-:Pattern:        PowerlawGoodnessOfFit[data_List, xMin_Integer, replicas_Integer]
-:Arguments:      { data, xMin, replicas }
-:ArgumentTypes:  { IntegerList, Integer, Integer }
+:Pattern:        PowerlawGoodnessOfFit[data_List, replicas_Integer, xParameter_Integer, distributionType_String, syntheticGeneratorMode_String]
+:Arguments:      { data, replicas, xParameter, distributionType, syntheticGeneratorMode }
+:ArgumentTypes:  { IntegerList, Integer, Integer, String, String }
 :ReturnType:     Manual
 :End:

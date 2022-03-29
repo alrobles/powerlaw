@@ -2,6 +2,7 @@
 #include <vector>
 #include <sstream>
 #include <numeric>
+#include <iostream>
 
 namespace VectorUtilities
 {
@@ -16,6 +17,11 @@ namespace VectorUtilities
     template<typename T> void RemoveLower(std::vector<T>& v, T n)
     {
         auto removePositions = remove_if(v.begin(), v.end(), [&](auto const& val){ return val < n; });
+        v.erase(removePositions, v.end());
+    }
+    template<typename T> void RemoveLowerOrEqual(std::vector<T>& v, T n)
+    {
+        auto removePositions = remove_if(v.begin(), v.end(), [&](auto const& val){ return val <= n; });
         v.erase(removePositions, v.end());
     }
     template<typename T> void RemoveGreater(std::vector<T>& v, T n)
@@ -79,5 +85,17 @@ namespace VectorUtilities
     template<typename T> int IndexOfMin(const std::vector<T>& v)
     {
         return static_cast<int>(min_element(v.begin(), v.end()) - v.begin());
+    }
+    template <typename T> void PrintVector(const std::vector<T>& v)
+    {
+        for (int i = 0; i < v.size(); ++i)
+        {
+            std::cout << v[i];
+            if (i < v.size() - 1)
+                std::cout << ", ";
+            if (i % 10 == 0)
+                std::cout << std::endl;
+        }
+        std::cout << std::endl;
     }
 }
