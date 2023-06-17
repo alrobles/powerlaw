@@ -1,0 +1,9 @@
+Architecture: amd64
+Description: A fitter for the discrete power-law distribution
+Maintainer: Angel Robles
+Package: powerlawfittercpp
+Priority: optional
+Section: devel
+Version: 1.0
+Installed-Size: 130
+

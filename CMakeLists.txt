@@ -44,4 +44,5 @@ install(TARGETS PowerLawFitterCppApp
 
 SET(CPACK_GENERATOR "DEB")
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Angel Robles") #required
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgsl-dev")
 INCLUDE(CPack)
